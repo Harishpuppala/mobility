@@ -3,7 +3,9 @@
 
 <head>
 
-<title>Buggy Driver Login</title>
+<title>Buggy PIN</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -25,7 +27,7 @@ background:white;
 padding:30px;
 border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
-width:300px;
+width:320px;
 text-align:center;
 }
 
@@ -36,15 +38,16 @@ color:#1B5E20;
 
 input{
 width:100%;
-padding:10px;
+padding:12px;
 font-size:16px;
-margin-top:10px;
+margin-top:15px;
 border-radius:6px;
 border:1px solid #ccc;
+box-sizing:border-box;
 }
 
 button{
-margin-top:15px;
+margin-top:18px;
 width:100%;
 padding:12px;
 font-size:16px;
@@ -78,9 +81,9 @@ color:#444;
 
 <div class="container">
 
-<h2>Buggy Driver</h2>
+<h2>Buggy PIN</h2>
 
-<input type="password" id="pinInput" placeholder="Enter PIN">
+<input type="password" id="pinInput" placeholder="Enter Buggy PIN">
 
 <button onclick="authenticate()">Login</button>
 
@@ -138,7 +141,7 @@ currentBuggy = pinBuggyMap[pin];
 document.getElementById("driverPanel").style.display = "block";
 
 document.getElementById("loginStatus").innerText =
-"Login successful - "+currentBuggy;
+"Login successful - " + currentBuggy;
 
 }else{
 

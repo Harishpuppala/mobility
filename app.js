@@ -28,17 +28,17 @@ const markers = {};
 /* Car icons */
 
 const greenIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/743/743131.png",
-iconSize: [28,28],
-iconAnchor: [14,14],
-popupAnchor: [0,-10]
+iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
+iconSize: [32,32],
+iconAnchor: [16,16],
+popupAnchor: [0,-12]
 });
 
 const redIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/743/743007.png",
-iconSize: [28,28],
-iconAnchor: [14,14],
-popupAnchor: [0,-10]
+iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448336.png",
+iconSize: [32,32],
+iconAnchor: [16,16],
+popupAnchor: [0,-12]
 });
 
 

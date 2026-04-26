@@ -13,7 +13,7 @@ firebase.initializeApp(firebaseConfig);
 
 /* Initialize map */
 
-var map = L.map('map').setView([16.463261979207143, 80.50698185003442], 16.25);
+var map = L.map('map').setView([16.463261979207143, 80.50698185003442], 17);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 maxZoom:19
@@ -46,18 +46,18 @@ shadowSize:[41,41]
 });
 
 
+const WARNING_LIMIT = 30000;
+const OFFLINE_LIMIT = 40000;
+
+
 /* Firebase reference */
 
 const driversRef = firebase.database().ref("drivers");
 
 
-/* Time limits */
+function updateMap(){
 
-const WARNING_LIMIT = 30000;   // 30 seconds
-const OFFLINE_LIMIT = 40000;   // 40 seconds
-
-
-driversRef.on("value", function(snapshot){
+driversRef.once("value").then(function(snapshot){
 
 snapshot.forEach(function(child){
 
@@ -73,7 +73,7 @@ if(!lat || !lng || !lastUpdate) return;
 const age = Date.now() - lastUpdate;
 
 
-/* Remove buggy if fully offline */
+/* Remove offline buggy */
 
 if(age > OFFLINE_LIMIT){
 
@@ -115,3 +115,15 @@ markers[id] = L.marker([lat,lng],{icon:icon})
 });
 
 });
+
+}
+
+
+/* Update every 5 seconds */
+
+setInterval(updateMap, 5000);
+
+
+/* Initial load */
+
+updateMap();

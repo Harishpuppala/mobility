@@ -46,8 +46,6 @@ shadowSize:[41,41]
 });
 
 
-/* Time limits */
-
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
 
@@ -59,7 +57,7 @@ const driversRef = firebase.database().ref("drivers");
 
 function updateMap(){
 
-/* Update timestamp in IST with AM/PM */
+/* Update IST timestamp */
 
 const now = new Date();
 
@@ -71,6 +69,8 @@ minute: "numeric",
 second: "numeric",
 hour12: true
 });
+
+let activeCount = 0;
 
 
 driversRef.once("value").then(function(snapshot){
@@ -103,6 +103,11 @@ return;
 }
 
 
+/* Active buggy */
+
+activeCount++;
+
+
 /* Determine marker color */
 
 let icon = greenIcon;
@@ -129,6 +134,12 @@ markers[id] = L.marker([lat,lng],{icon:icon})
 }
 
 });
+
+
+/* Update active buggy counter */
+
+document.getElementById("activeBuggies").innerText =
+"Active Buggies: " + activeCount;
 
 });
 

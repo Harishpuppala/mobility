@@ -46,6 +46,8 @@ shadowSize:[41,41]
 });
 
 
+/* Time limits */
+
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
 
@@ -56,6 +58,20 @@ const driversRef = firebase.database().ref("drivers");
 
 
 function updateMap(){
+
+/* Update timestamp in IST with AM/PM */
+
+const now = new Date();
+
+document.getElementById("lastUpdate").innerText =
+"Last updated: " + now.toLocaleTimeString("en-IN", {
+timeZone: "Asia/Kolkata",
+hour: "numeric",
+minute: "numeric",
+second: "numeric",
+hour12: true
+});
+
 
 driversRef.once("value").then(function(snapshot){
 

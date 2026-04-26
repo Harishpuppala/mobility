@@ -56,8 +56,15 @@ padding:10px 12px;
 border-radius:8px;
 font-size:12px;
 box-shadow:0 3px 8px rgba(0,0,0,0.3);
-line-height:18px;
+line-height:20px;
 z-index:1000;
+}
+
+/* Legend icon alignment */
+
+.legend img{
+vertical-align:middle;
+margin-right:6px;
 }
 
 /* Developer credit */

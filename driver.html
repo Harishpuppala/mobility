@@ -11,7 +11,7 @@
 
 <body>
 
-<h2>Driver Login</h2>
+<h2>Buggy Driver Login</h2>
 
 <label>Enter PIN</label>
 <br><br>
@@ -26,23 +26,7 @@
 
 <div id="driverPanel" style="display:none">
 
-<h2>Driver Location Sharing</h2>
-
-<label>Select Buggy</label>
-<br><br>
-
-<select id="buggySelect">
-<option value="buggy1">Buggy 1</option>
-<option value="buggy2">Buggy 2</option>
-<option value="buggy3">Buggy 3</option>
-<option value="buggy4">Buggy 4</option>
-<option value="buggy5">Buggy 5</option>
-<option value="buggy6">Buggy 6</option>
-<option value="buggy7">Buggy 7</option>
-<option value="buggy8">Buggy 8</option>
-</select>
-
-<br><br>
+<h2 id="buggyName"></h2>
 
 <button onclick="startSharing()">Start Sharing Location</button>
 
@@ -65,35 +49,41 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 
-/* PIN list */
+/* PIN → Buggy mapping */
 
-const validPins = [
-"1421",
-"2632",
-"3743",
-"4854",
-"5965",
-"6176",
-"7287",
-"8398"
-];
+const pinBuggyMap = {
+
+"1421":"buggy1",
+"2632":"buggy2",
+"3743":"buggy3",
+"4854":"buggy4",
+"5965":"buggy5",
+"6176":"buggy6",
+"7287":"buggy7",
+"8398":"buggy8"
+
+};
+
+let currentBuggy = null;
 
 
 function authenticate(){
 
 const pin = document.getElementById("pinInput").value;
 
-if(validPins.includes(pin)){
+if(pinBuggyMap[pin]){
+
+currentBuggy = pinBuggyMap[pin];
 
 document.getElementById("driverPanel").style.display = "block";
 
-document.getElementById("loginStatus").innerText =
-"Login successful";
+document.getElementById("loginStatus").innerText = "Login successful";
+
+document.getElementById("buggyName").innerText = "Driver for " + currentBuggy;
 
 }else{
 
-document.getElementById("loginStatus").innerText =
-"Invalid PIN";
+document.getElementById("loginStatus").innerText = "Invalid PIN";
 
 }
 
@@ -102,17 +92,12 @@ document.getElementById("loginStatus").innerText =
 
 function startSharing(){
 
-const buggyId = document.getElementById("buggySelect").value;
-
-document.getElementById("status").innerText =
-"Sharing location for " + buggyId;
-
 navigator.geolocation.watchPosition(function(position){
 
 const lat = position.coords.latitude;
 const lng = position.coords.longitude;
 
-firebase.database().ref("drivers/"+buggyId).set({
+firebase.database().ref("drivers/"+currentBuggy).set({
 lat:lat,
 lng:lng,
 time:Date.now()

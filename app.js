@@ -25,20 +25,20 @@ maxZoom:19
 const markers = {};
 
 
-/* Car icons */
+/* TOP VIEW CAR ICONS */
 
 const greenIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
-iconSize: [32,32],
-iconAnchor: [16,16],
-popupAnchor: [0,-12]
+iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
+iconSize: [38,38],
+iconAnchor: [19,19],
+popupAnchor: [0,-10]
 });
 
 const redIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448336.png",
-iconSize: [32,32],
-iconAnchor: [16,16],
-popupAnchor: [0,-12]
+iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744467.png",
+iconSize: [38,38],
+iconAnchor: [19,19],
+popupAnchor: [0,-10]
 });
 
 

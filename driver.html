@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <title>Buggy Driver Location</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -12,7 +13,21 @@
 
 <h2>Driver Location Sharing</h2>
 
-<p id="buggyName"></p>
+<label>Select Buggy</label>
+<br><br>
+
+<select id="buggySelect">
+<option value="buggy1">Buggy 1</option>
+<option value="buggy2">Buggy 2</option>
+<option value="buggy3">Buggy 3</option>
+<option value="buggy4">Buggy 4</option>
+<option value="buggy5">Buggy 5</option>
+<option value="buggy5">Buggy 6</option>
+<option value="buggy5">Buggy 7</option>
+<option value="buggy5">Buggy 8</option>
+</select>
+
+<br><br>
 
 <button onclick="startSharing()">Start Sharing Location</button>
 
@@ -32,47 +47,42 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-function getBuggyId(){
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get("buggy") || "buggy1";
-}
-
-document.getElementById("buggyName").innerText =
-"Driver ID: " + getBuggyId();
-
 function startSharing(){
 
-  const buggyId = getBuggyId();
+const buggyId = document.getElementById("buggySelect").value;
 
-  document.getElementById("status").innerText =
-  "Sharing location...";
+document.getElementById("status").innerText =
+"Sharing location for " + buggyId;
 
-  navigator.geolocation.watchPosition(function(position){
+navigator.geolocation.watchPosition(function(position){
 
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
+const lat = position.coords.latitude;
+const lng = position.coords.longitude;
 
-    firebase.database().ref("drivers/"+buggyId).set({
-      lat:lat,
-      lng:lng,
-      time:Date.now()
-    });
+firebase.database().ref("drivers/"+buggyId).set({
+lat:lat,
+lng:lng,
+time:Date.now()
+});
 
-    document.getElementById("status").innerText =
-    "Location updated: " + lat + ", " + lng;
+document.getElementById("status").innerText =
+"Location updated: " + lat + ", " + lng;
 
-  },
-  function(error){
-    document.getElementById("status").innerText =
-    "Location error: " + error.message;
-  },
-  {
-    enableHighAccuracy:true
-  });
+},
+function(error){
+
+document.getElementById("status").innerText =
+"Location error: " + error.message;
+
+},
+{
+enableHighAccuracy:true
+});
 
 }
 
 </script>
 
 </body>
+
 </html>

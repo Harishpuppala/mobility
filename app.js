@@ -10,53 +10,108 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-/* Initialize Map */
 
-var map = L.map('map').setView([16.463261979207143, 80.5069818500344], 16);
+/* Initialize map */
+
+var map = L.map('map').setView([16.463261979207143, 80.50698185003442], 16);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19
+maxZoom:19
 }).addTo(map);
 
-/* Store buggy markers */
+
+/* Marker storage */
 
 const markers = {};
+
+
+/* Marker icons */
+
+const greenIcon = new L.Icon({
+iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+shadowUrl:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+iconSize:[25,41],
+iconAnchor:[12,41],
+popupAnchor:[1,-34],
+shadowSize:[41,41]
+});
+
+const redIcon = new L.Icon({
+iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+shadowUrl:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+iconSize:[25,41],
+iconAnchor:[12,41],
+popupAnchor:[1,-34],
+shadowSize:[41,41]
+});
+
 
 /* Firebase reference */
 
 const driversRef = firebase.database().ref("drivers");
 
-/* Listen for live updates */
+
+/* Time limits */
+
+const WARNING_LIMIT = 30000;   // 30 seconds
+const OFFLINE_LIMIT = 40000;   // 40 seconds
+
 
 driversRef.on("value", function(snapshot){
 
-    snapshot.forEach(function(child){
+snapshot.forEach(function(child){
 
-        const id = child.key;
-        const data = child.val();
+const id = child.key;
+const data = child.val();
 
-        const lat = data.lat;
-        const lng = data.lng;
+const lat = data.lat;
+const lng = data.lng;
+const lastUpdate = data.time;
 
-        if(!lat || !lng) return;
+if(!lat || !lng || !lastUpdate) return;
 
-        /* Update marker if already exists */
+const age = Date.now() - lastUpdate;
 
-        if(markers[id]){
 
-            markers[id].setLatLng([lat,lng]);
+/* Remove buggy if fully offline */
 
-        } 
-        else {
+if(age > OFFLINE_LIMIT){
 
-            /* Create new marker */
+if(markers[id]){
+map.removeLayer(markers[id]);
+delete markers[id];
+}
 
-            markers[id] = L.marker([lat,lng])
-            .addTo(map)
-            .bindPopup("Buggy: " + id);
+return;
 
-        }
+}
 
-    });
+
+/* Determine marker color */
+
+let icon = greenIcon;
+
+if(age > WARNING_LIMIT){
+icon = redIcon;
+}
+
+
+/* Update marker */
+
+if(markers[id]){
+
+markers[id].setLatLng([lat,lng]);
+markers[id].setIcon(icon);
+
+}
+else{
+
+markers[id] = L.marker([lat,lng],{icon:icon})
+.addTo(map)
+.bindPopup("Buggy: "+id);
+
+}
+
+});
 
 });

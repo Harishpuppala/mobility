@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 
 /* Initialize Map */
 
-var map = L.map('map').setView([16.4419, 80.6220], 16);
+var map = L.map('map').setView([16.463261979207143, 80.5069818500344], 16);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19

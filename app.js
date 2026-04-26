@@ -25,26 +25,24 @@ maxZoom:19
 const markers = {};
 
 
-/* Marker icons */
+/* Car icons */
 
-const greenIcon = new L.Icon({
-iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
-shadowUrl:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-iconSize:[25,41],
-iconAnchor:[12,41],
-popupAnchor:[1,-34],
-shadowSize:[41,41]
+const greenIcon = L.icon({
+iconUrl: "https://cdn-icons-png.flaticon.com/512/743/743131.png",
+iconSize: [28,28],
+iconAnchor: [14,14],
+popupAnchor: [0,-10]
 });
 
-const redIcon = new L.Icon({
-iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-shadowUrl:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-iconSize:[25,41],
-iconAnchor:[12,41],
-popupAnchor:[1,-34],
-shadowSize:[41,41]
+const redIcon = L.icon({
+iconUrl: "https://cdn-icons-png.flaticon.com/512/743/743007.png",
+iconSize: [28,28],
+iconAnchor: [14,14],
+popupAnchor: [0,-10]
 });
 
+
+/* Time thresholds */
 
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
@@ -108,7 +106,7 @@ return;
 activeCount++;
 
 
-/* Determine marker color */
+/* Determine icon */
 
 let icon = greenIcon;
 

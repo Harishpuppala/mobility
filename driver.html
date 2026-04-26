@@ -11,6 +11,21 @@
 
 <body>
 
+<h2>Driver Login</h2>
+
+<label>Enter PIN</label>
+<br><br>
+
+<input type="password" id="pinInput" placeholder="Enter 4 digit PIN">
+
+<br><br>
+
+<button onclick="authenticate()">Login</button>
+
+<p id="loginStatus"></p>
+
+<div id="driverPanel" style="display:none">
+
 <h2>Driver Location Sharing</h2>
 
 <label>Select Buggy</label>
@@ -22,9 +37,9 @@
 <option value="buggy3">Buggy 3</option>
 <option value="buggy4">Buggy 4</option>
 <option value="buggy5">Buggy 5</option>
-<option value="buggy5">Buggy 6</option>
-<option value="buggy5">Buggy 7</option>
-<option value="buggy5">Buggy 8</option>
+<option value="buggy6">Buggy 6</option>
+<option value="buggy7">Buggy 7</option>
+<option value="buggy8">Buggy 8</option>
 </select>
 
 <br><br>
@@ -32,6 +47,8 @@
 <button onclick="startSharing()">Start Sharing Location</button>
 
 <p id="status"></p>
+
+</div>
 
 <script>
 
@@ -46,6 +63,42 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
+
+/* PIN list */
+
+const validPins = [
+"1421",
+"2632",
+"3743",
+"4854",
+"5965",
+"6176",
+"7287",
+"8398"
+];
+
+
+function authenticate(){
+
+const pin = document.getElementById("pinInput").value;
+
+if(validPins.includes(pin)){
+
+document.getElementById("driverPanel").style.display = "block";
+
+document.getElementById("loginStatus").innerText =
+"Login successful";
+
+}else{
+
+document.getElementById("loginStatus").innerText =
+"Invalid PIN";
+
+}
+
+}
+
 
 function startSharing(){
 

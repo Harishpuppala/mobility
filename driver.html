@@ -1,36 +1,98 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
-<title>Buggy Driver Location</title>
+<title>Buggy Driver Login</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:#f2f5f7;
+display:flex;
+align-items:center;
+justify-content:center;
+height:100vh;
+}
+
+.container{
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.15);
+width:300px;
+text-align:center;
+}
+
+h2{
+margin-top:0;
+color:#1B5E20;
+}
+
+input{
+width:100%;
+padding:10px;
+font-size:16px;
+margin-top:10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+margin-top:15px;
+width:100%;
+padding:12px;
+font-size:16px;
+background:#1B5E20;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#145A1A;
+}
+
+#driverPanel{
+margin-top:20px;
+display:none;
+}
+
+.status{
+margin-top:10px;
+font-size:14px;
+color:#444;
+}
+
+</style>
 
 </head>
 
 <body>
 
-<h2>Buggy Driver Login</h2>
+<div class="container">
 
-<label>Enter PIN</label>
-<br><br>
+<h2>Buggy Driver</h2>
 
-<input type="password" id="pinInput" placeholder="Enter 4 digit PIN">
-
-<br><br>
+<input type="password" id="pinInput" placeholder="Enter PIN">
 
 <button onclick="authenticate()">Login</button>
 
-<p id="loginStatus"></p>
+<p id="loginStatus" class="status"></p>
 
-<div id="driverPanel" style="display:none">
-
-<h2 id="buggyName"></h2>
+<div id="driverPanel">
 
 <button onclick="startSharing()">Start Sharing Location</button>
 
-<p id="status"></p>
+<p id="status" class="status"></p>
+
+</div>
 
 </div>
 
@@ -52,7 +114,6 @@ firebase.initializeApp(firebaseConfig);
 /* PIN → Buggy mapping */
 
 const pinBuggyMap = {
-
 "1421":"buggy1",
 "2632":"buggy2",
 "3743":"buggy3",
@@ -61,7 +122,6 @@ const pinBuggyMap = {
 "6176":"buggy6",
 "7287":"buggy7",
 "8398":"buggy8"
-
 };
 
 let currentBuggy = null;
@@ -77,13 +137,13 @@ currentBuggy = pinBuggyMap[pin];
 
 document.getElementById("driverPanel").style.display = "block";
 
-document.getElementById("loginStatus").innerText = "Login successful";
-
-document.getElementById("buggyName").innerText = "Driver for " + currentBuggy;
+document.getElementById("loginStatus").innerText =
+"Login successful - "+currentBuggy;
 
 }else{
 
-document.getElementById("loginStatus").innerText = "Invalid PIN";
+document.getElementById("loginStatus").innerText =
+"Invalid PIN";
 
 }
 
@@ -104,7 +164,7 @@ time:Date.now()
 });
 
 document.getElementById("status").innerText =
-"Location updated: " + lat + ", " + lng;
+"Location updated: " + lat.toFixed(5) + ", " + lng.toFixed(5);
 
 },
 function(error){

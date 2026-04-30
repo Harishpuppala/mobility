@@ -20,9 +20,10 @@ margin:0;
 font-family:Arial, Helvetica, sans-serif;
 background:#f2f5f7;
 display:flex;
-align-items:center;
 justify-content:center;
-height:100vh;
+align-items:flex-start;
+min-height:100vh;
+padding-top:30px;
 }
 
 .container{
@@ -32,6 +33,8 @@ border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
 width:420px;
 text-align:center;
+max-height:92vh;
+overflow-y:auto;
 }
 
 h2{
@@ -73,22 +76,16 @@ font-size:14px;
 color:#444;
 }
 
-/* Hide dashboard initially */
-
 #driverPanel{
 margin-top:10px;
 display:none;
 }
-
-/* Mini map */
 
 #driverMap{
 height:200px;
 border-radius:8px;
 margin-bottom:15px;
 }
-
-/* Passenger rows */
 
 .block{
 display:flex;
@@ -130,8 +127,6 @@ border-radius:4px;
 
 <div class="container">
 
-<!-- LOGIN SECTION -->
-
 <div id="loginSection">
 
 <h2>Buggy Driver</h2>
@@ -143,9 +138,6 @@ border-radius:4px;
 <p id="loginStatus" class="status"></p>
 
 </div>
-
-
-<!-- DRIVER DASHBOARD -->
 
 <div id="driverPanel">
 
@@ -221,12 +213,7 @@ if(pinBuggyMap[pin]){
 
 currentBuggy=pinBuggyMap[pin];
 
-/* hide login */
-
 document.getElementById("loginSection").style.display="none";
-
-/* show dashboard */
-
 document.getElementById("driverPanel").style.display="block";
 
 initializeMap();
@@ -289,8 +276,6 @@ maximumAge:3000
 
 }
 
-/* Listen buggy locations */
-
 function listenBuggies(){
 
 firebase.database().ref("drivers").on("value",function(snapshot){
@@ -314,31 +299,44 @@ buggyMarkers[child.key]=L.marker([data.lat,data.lng])
 
 }
 
-/* Listen demand */
-
 function listenDemand(){
 
 firebase.database().ref("requests").on("value",function(snapshot){
 
 let demandArray=[];
 
-snapshot.forEach(function(child){
+/* initialize all blocks */
+
+Object.keys(blockLocations).forEach(function(block){
 
 demandArray.push({
-block:child.key,
-count:child.val().count||0
+block:block,
+count:0
 });
 
 });
 
-/* sort by demand */
+/* update from firebase */
+
+snapshot.forEach(function(child){
+
+const block=child.key;
+const count=child.val().count||0;
+
+const item=demandArray.find(x=>x.block===block);
+
+if(item){
+item.count=count;
+}
+
+});
+
+/* sort */
 
 demandArray.sort((a,b)=>b.count-a.count);
 
 const container=document.getElementById("demandList");
 container.innerHTML="";
-
-/* clear map markers */
 
 Object.values(demandMarkers).forEach(m=>driverMap.removeLayer(m));
 demandMarkers={};

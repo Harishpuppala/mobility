@@ -1,7 +1,7 @@
 body{
 margin:0;
 font-family:Arial, Helvetica, sans-serif;
-overflow:hidden;
+background:#f2f5f7;
 }
 
 /* ================= HEADER ================= */
@@ -34,11 +34,70 @@ font-weight:bold;
 }
 
 
-/* ================= MAP ================= */
+/* ================= USER DASHBOARD ================= */
+
+.userContainer{
+max-width:420px;
+margin:20px auto;
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ================= MINI MAP ================= */
+
+.miniMapBox{
+width:100%;
+margin-bottom:15px;
+}
 
 #map{
-height:calc(100vh - 40px);
+height:220px;
 width:100%;
+border-radius:8px;
+}
+
+
+/* ================= REQUEST GRID ================= */
+
+.requestBox{
+text-align:center;
+}
+
+.requestBox h3{
+margin-top:0;
+color:#1B5E20;
+}
+
+.requestGrid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:10px;
+}
+
+.reqBtn{
+padding:10px;
+font-size:14px;
+background:#1B5E20;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.reqBtn:hover{
+background:#145A1A;
+}
+
+
+/* ================= REQUEST STATUS ================= */
+
+#requestStatus{
+margin-top:10px;
+font-size:13px;
+color:#444;
 }
 
 
@@ -60,66 +119,6 @@ z-index:1000;
 .legend img{
 vertical-align:middle;
 margin-right:6px;
-}
-
-
-/* ================= DEVELOPER CREDIT ================= */
-
-.credit{
-position:absolute;
-bottom:5px;
-right:10px;
-font-size:11px;
-color:#444;
-background:rgba(255,255,255,0.85);
-padding:4px 8px;
-border-radius:4px;
-z-index:1000;
-}
-
-
-/* ================= REQUEST PANEL ================= */
-
-.request-panel{
-position:absolute;
-top:60px;
-left:10px;
-background:white;
-padding:12px;
-border-radius:8px;
-box-shadow:0 3px 8px rgba(0,0,0,0.3);
-z-index:1000;
-width:170px;
-}
-
-.request-panel b{
-display:block;
-margin-bottom:6px;
-font-size:14px;
-}
-
-.request-panel button{
-display:block;
-width:100%;
-margin-top:6px;
-padding:8px;
-background:#1B5E20;
-color:white;
-border:none;
-border-radius:5px;
-cursor:pointer;
-font-size:13px;
-transition:background 0.2s;
-}
-
-.request-panel button:hover{
-background:#145A1A;
-}
-
-#requestStatus{
-margin-top:8px;
-font-size:12px;
-color:#333;
 }
 
 
@@ -153,14 +152,10 @@ padding:4px 6px;
 border-radius:5px;
 }
 
-/* Highlight rows with passengers */
-
 .demand-active{
 background:#FFE5E5;
 border-left:4px solid #D32F2F;
 }
-
-/* Passenger count */
 
 .passenger-count{
 font-weight:bold;
@@ -168,8 +163,6 @@ background:#FFF3E0;
 padding:2px 6px;
 border-radius:4px;
 }
-
-/* Buttons */
 
 .demand-panel button{
 margin-left:6px;
@@ -187,7 +180,7 @@ background:#145A1A;
 }
 
 
-/* ================= MOBILE OPTIMIZATION ================= */
+/* ================= MOBILE ================= */
 
 @media (max-width:700px){
 
@@ -209,18 +202,13 @@ font-size:11px;
 font-size:11px;
 }
 
-.request-panel{
-width:140px;
+.userContainer{
+width:92%;
 }
 
-.demand-panel{
-width:150px;
-font-size:12px;
-}
-
-.request-panel button{
-font-size:12px;
-padding:7px;
+.reqBtn{
+font-size:13px;
+padding:9px;
 }
 
 }

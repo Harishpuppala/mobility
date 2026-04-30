@@ -1,11 +1,11 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
-  authDomain: "mobility-ca790.firebaseapp.com",
-  databaseURL: "https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "mobility-ca790",
-  storageBucket: "mobility-ca790.firebasestorage.app",
-  messagingSenderId: "832491995447",
-  appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
+apiKey: "AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
+authDomain: "mobility-ca790.firebaseapp.com",
+databaseURL: "https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "mobility-ca790",
+storageBucket: "mobility-ca790.firebasestorage.app",
+messagingSenderId: "832491995447",
+appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -29,15 +29,15 @@ maxZoom:19
 const markers = {};
 
 const greenIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
-iconSize: [38,38],
-iconAnchor: [19,19]
+iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+iconSize:[38,38],
+iconAnchor:[19,19]
 });
 
 const redIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744467.png",
-iconSize: [38,38],
-iconAnchor: [19,19]
+iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744467.png",
+iconSize:[38,38],
+iconAnchor:[19,19]
 });
 
 const WARNING_LIMIT = 30000;
@@ -153,6 +153,21 @@ const requestMarkers = {};
 const requestsRef = firebase.database().ref("requests");
 
 
+/* Icons for demand */
+
+const demandIcon = L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/252/252025.png",
+iconSize:[36,36],
+iconAnchor:[18,18]
+});
+
+const highestDemandIcon = L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
+iconSize:[42,42],
+iconAnchor:[21,21]
+});
+
+
 /* Demand listener */
 
 requestsRef.on("value",function(snapshot){
@@ -160,7 +175,8 @@ requestsRef.on("value",function(snapshot){
 let highestDemand = 0;
 let highestBlock = null;
 
-/* Remove previous markers */
+
+/* Remove old markers */
 
 Object.keys(requestMarkers).forEach(function(block){
 
@@ -191,10 +207,12 @@ highestBlock = block;
 }
 
 
-/* Create marker */
+/* Create demand marker */
 
-requestMarkers[block] = L.marker([info.lat,info.lng])
-.addTo(map)
+requestMarkers[block] = L.marker(
+[info.lat,info.lng],
+{icon:demandIcon}
+).addTo(map)
 .bindPopup(
 "<b>"+info.name+"</b><br>"+
 "Waiting passengers: "+count
@@ -203,17 +221,11 @@ requestMarkers[block] = L.marker([info.lat,info.lng])
 });
 
 
-/* Highlight highest demand */
+/* Highlight highest demand location */
 
 if(highestBlock && requestMarkers[highestBlock]){
 
-requestMarkers[highestBlock].setIcon(
-L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
-iconSize:[42,42],
-iconAnchor:[21,21]
-})
-);
+requestMarkers[highestBlock].setIcon(highestDemandIcon);
 
 }
 

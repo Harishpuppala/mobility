@@ -28,9 +28,6 @@ maxZoom:19
 
 const markers = {};
 
-
-/* Car icons */
-
 const greenIcon = L.icon({
 iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
 iconSize: [38,38],
@@ -42,7 +39,6 @@ iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744467.png",
 iconSize: [38,38],
 iconAnchor: [19,19]
 });
-
 
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
@@ -65,13 +61,14 @@ hour12: true
 
 let activeCount = 0;
 
-
 driversRef.once("value").then(function(snapshot){
 
 snapshot.forEach(function(child){
 
 const id = child.key;
 const data = child.val();
+
+if(!data) return;
 
 const lat = data.lat;
 const lng = data.lng;
@@ -125,7 +122,6 @@ markers[id] = L.marker([lat,lng],{icon:icon})
 
 });
 
-
 document.getElementById("activeBuggies").innerText =
 "Active Buggies: " + activeCount;
 
@@ -144,9 +140,6 @@ updateMap();
 /* PASSENGER REQUEST SYSTEM */
 /* ----------------------------- */
 
-
-/* Block locations */
-
 const blocks = {
 CV_RAMAN: {name:"CV Raman", lat:16.4638, lng:80.5074},
 SR_BLOCK: {name:"SR Block", lat:16.4631, lng:80.5063},
@@ -154,7 +147,6 @@ ADMIN: {name:"Admin", lat:16.4625, lng:80.5070},
 X_LAB: {name:"X Lab", lat:16.4636, lng:80.5059},
 JC_BOSE: {name:"JC Bose", lat:16.4642, lng:80.5068}
 };
-
 
 const requestMarkers = {};
 const requestsRef = firebase.database().ref("requests");
@@ -167,19 +159,17 @@ requestsRef.on("value", function(snapshot){
 snapshot.forEach(function(child){
 
 const block = child.key;
-const count = child.val().count || 0;
+const data = child.val();
+
+if(!blocks[block]) return;
+
+let count = 0;
+
+if(data && data.count !== undefined){
+count = data.count;
+}
 
 const info = blocks[block];
-if(!info) return;
-
-
-/* Update demand panel */
-
-const element = document.getElementById("count_"+block);
-
-if(element){
-element.innerText = count;
-}
 
 
 /* Update map markers */
@@ -235,17 +225,17 @@ return;
 }
 
 
-/* Increase request count */
+/* Write request safely */
 
 firebase.database()
-.ref("requests/"+block+"/count")
-.transaction(function(count){
+.ref("requests/"+block)
+.transaction(function(data){
 
-if(count === null){
-return 1;
+if(data === null){
+return {count:1};
 }
 
-return count + 1;
+return {count:(data.count || 0) + 1};
 
 });
 
@@ -268,9 +258,13 @@ firebase.database()
 .ref("requests/"+block+"/count")
 .transaction(function(count){
 
+if(count === null) return 0;
+
 if(count > 0){
 return count - 1;
 }
+
+return 0;
 
 });
 

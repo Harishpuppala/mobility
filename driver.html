@@ -200,7 +200,12 @@ document.getElementById("driverPanel").style.display = "block";
 document.getElementById("loginStatus").innerText =
 "Login successful - " + currentBuggy;
 
+/* Start location sharing */
+
 startSharing();
+
+/* Prevent screen sleep */
+
 keepScreenAwake();
 
 }else{
@@ -249,10 +254,20 @@ enableHighAccuracy:true
 
 firebase.database().ref("requests").on("value", function(snapshot){
 
+const blocks = ["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE"];
+
+/* Reset counts first */
+
+blocks.forEach(function(block){
+document.getElementById("count_"+block).innerText = 0;
+});
+
 snapshot.forEach(function(child){
 
 const block = child.key;
-const count = child.val().count || 0;
+const data = child.val();
+
+const count = data.count || 0;
 
 const element = document.getElementById("count_"+block);
 
@@ -273,9 +288,13 @@ firebase.database()
 .ref("requests/"+block+"/count")
 .transaction(function(count){
 
+if(count === null) return 0;
+
 if(count > 0){
 return count - 1;
 }
+
+return 0;
 
 });
 

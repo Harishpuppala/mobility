@@ -39,7 +39,7 @@ Centre for Geospatial Technology
 </div>
 
 
-<!-- Request Panel -->
+<!-- Request Panel (for passengers) -->
 
 <div class="request-panel">
 
@@ -52,6 +52,40 @@ Centre for Geospatial Technology
 <button onclick="requestBuggy('JC_BOSE')">JC Bose</button>
 
 <p id="requestStatus"></p>
+
+</div>
+
+
+<!-- Demand Panel (for drivers) -->
+
+<div class="demand-panel">
+
+<b>Waiting Passengers</b>
+
+<div>
+CV Raman : <span id="count_CV_RAMAN">0</span>
+<button onclick="boarded('CV_RAMAN')">Boarded</button>
+</div>
+
+<div>
+SR Block : <span id="count_SR_BLOCK">0</span>
+<button onclick="boarded('SR_BLOCK')">Boarded</button>
+</div>
+
+<div>
+Admin : <span id="count_ADMIN">0</span>
+<button onclick="boarded('ADMIN')">Boarded</button>
+</div>
+
+<div>
+X Lab : <span id="count_X_LAB">0</span>
+<button onclick="boarded('X_LAB')">Boarded</button>
+</div>
+
+<div>
+JC Bose : <span id="count_JC_BOSE">0</span>
+<button onclick="boarded('JC_BOSE')">Boarded</button>
+</div>
 
 </div>
 

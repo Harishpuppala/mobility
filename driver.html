@@ -67,15 +67,17 @@ background:#145A1A;
 background:#0D47A1;
 }
 
-#driverPanel{
-margin-top:20px;
-display:none;
-}
-
 .status{
 margin-top:10px;
 font-size:14px;
 color:#444;
+}
+
+/* Hide dashboard initially */
+
+#driverPanel{
+margin-top:10px;
+display:none;
 }
 
 /* Mini map */
@@ -128,6 +130,10 @@ border-radius:4px;
 
 <div class="container">
 
+<!-- LOGIN SECTION -->
+
+<div id="loginSection">
+
 <h2>Buggy Driver</h2>
 
 <input type="password" id="pinInput" placeholder="Enter Buggy PIN">
@@ -135,6 +141,11 @@ border-radius:4px;
 <button onclick="authenticate()">Login</button>
 
 <p id="loginStatus" class="status"></p>
+
+</div>
+
+
+<!-- DRIVER DASHBOARD -->
 
 <div id="driverPanel">
 
@@ -210,9 +221,13 @@ if(pinBuggyMap[pin]){
 
 currentBuggy=pinBuggyMap[pin];
 
-document.getElementById("driverPanel").style.display="block";
+/* hide login */
 
-document.getElementById("loginStatus").innerText="Login successful - "+currentBuggy;
+document.getElementById("loginSection").style.display="none";
+
+/* show dashboard */
+
+document.getElementById("driverPanel").style.display="block";
 
 initializeMap();
 
@@ -320,8 +335,6 @@ count:child.val().count||0
 
 demandArray.sort((a,b)=>b.count-a.count);
 
-/* update UI */
-
 const container=document.getElementById("demandList");
 container.innerHTML="";
 
@@ -346,8 +359,6 @@ row.innerHTML=`
 
 container.appendChild(row);
 
-/* show marker */
-
 if(item.count>0){
 
 const loc=blockLocations[item.block];
@@ -366,15 +377,11 @@ color:"red"
 }
 
 function boarded(block){
-
 firebase.database().ref("requests/"+block+"/count").set(0);
-
 }
 
 function setRemaining(block,value){
-
 firebase.database().ref("requests/"+block+"/count").set(value);
-
 }
 
 </script>

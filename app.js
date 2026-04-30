@@ -141,11 +141,19 @@ updateMap();
 /* ----------------------------- */
 
 const blocks = {
+
 CV_RAMAN: {name:"CV Raman", lat:16.4638, lng:80.5074},
+
 SR_BLOCK: {name:"SR Block", lat:16.4631, lng:80.5063},
+
 ADMIN: {name:"Admin", lat:16.4625, lng:80.5070},
+
 X_LAB: {name:"X Lab", lat:16.4636, lng:80.5059},
-JC_BOSE: {name:"JC Bose", lat:16.4642, lng:80.5068}
+
+JC_BOSE: {name:"JC Bose", lat:16.4642, lng:80.5068},
+
+GATE6: {name:"Gate 6 Parking", lat:16.4650, lng:80.5075}
+
 };
 
 const requestMarkers = {};
@@ -155,6 +163,17 @@ const requestsRef = firebase.database().ref("requests");
 /* Listen for demand updates */
 
 requestsRef.on("value", function(snapshot){
+
+/* Reset all markers */
+
+Object.keys(blocks).forEach(function(block){
+
+if(requestMarkers[block]){
+map.removeLayer(requestMarkers[block]);
+delete requestMarkers[block];
+}
+
+});
 
 snapshot.forEach(function(child){
 
@@ -172,27 +191,13 @@ count = data.count;
 const info = blocks[block];
 
 
-/* Update map markers */
+/* Show marker only if requests exist */
 
 if(count > 0){
 
-if(!requestMarkers[block]){
-
-requestMarkers[block] = L.marker([info.lat,info.lng]).addTo(map);
-
-}
-
-requestMarkers[block].bindPopup(
-"<b>"+info.name+"</b><br>Requests: "+count
-);
-
-}
-else{
-
-if(requestMarkers[block]){
-map.removeLayer(requestMarkers[block]);
-delete requestMarkers[block];
-}
+requestMarkers[block] = L.marker([info.lat,info.lng])
+.addTo(map)
+.bindPopup("<b>"+info.name+"</b><br>Requests: "+count);
 
 }
 

@@ -47,32 +47,41 @@ Centre for Geospatial Technology
 </div>
 
 
-<!-- ================= PASSENGER REQUEST PANEL ================= -->
+<!-- ================= USER DASHBOARD ================= -->
 
-<div class="request-panel">
+<div class="userContainer">
 
-<b>Request Buggy</b>
+<!-- MINI MAP -->
+
+<div class="miniMapBox">
+<div id="map"></div>
+</div>
+
+
+<!-- REQUEST SECTION -->
+
+<div class="requestBox">
+
+<h3>Request Buggy</h3>
+
+<div class="requestGrid">
 
 <button class="reqBtn" onclick="sendRequest('CV_RAMAN')">CV Raman</button>
-
 <button class="reqBtn" onclick="sendRequest('SR_BLOCK')">SR Block</button>
 
 <button class="reqBtn" onclick="sendRequest('ADMIN')">Admin</button>
-
 <button class="reqBtn" onclick="sendRequest('X_LAB')">X Lab</button>
 
 <button class="reqBtn" onclick="sendRequest('JC_BOSE')">JC Bose</button>
-
 <button class="reqBtn" onclick="sendRequest('GATE6')">Gate 6 Parking</button>
+
+</div>
 
 <p id="requestStatus"></p>
 
 </div>
 
-
-<!-- ================= MAP ================= -->
-
-<div id="map"></div>
+</div>
 
 
 <!-- ================= LEGEND ================= -->
@@ -119,17 +128,14 @@ return;
 
 }
 
-
 /* Call main request function */
 
 requestBuggy(block);
-
 
 /* Save locally */
 
 localStorage.setItem("lastBuggyRequestBlock",block);
 localStorage.setItem("lastBuggyRequestTime",Date.now());
-
 
 /* Disable buttons */
 
@@ -139,7 +145,6 @@ buttons.forEach(btn=>{
 btn.disabled = true;
 btn.style.opacity = 0.5;
 });
-
 
 document.getElementById("requestStatus").innerText =
 "Request sent from " + block.replace("_"," ") +

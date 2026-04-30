@@ -11,9 +11,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 
-/* ----------------------------- */
+/* ===================================================== */
 /* MAP INITIALIZATION */
-/* ----------------------------- */
+/* ===================================================== */
 
 var map = L.map('map').setView([16.463261979207143, 80.50698185003442], 16);
 
@@ -22,9 +22,9 @@ maxZoom:19
 }).addTo(map);
 
 
-/* ----------------------------- */
-/* BUGGY TRACKING SECTION */
-/* ----------------------------- */
+/* ===================================================== */
+/* BUGGY TRACKING */
+/* ===================================================== */
 
 const markers = {};
 
@@ -51,12 +51,12 @@ function updateMap(){
 const now = new Date();
 
 document.getElementById("lastUpdate").innerText =
-"Last updated: " + now.toLocaleTimeString("en-IN", {
-timeZone: "Asia/Kolkata",
-hour: "numeric",
-minute: "numeric",
-second: "numeric",
-hour12: true
+"Last updated: " + now.toLocaleTimeString("en-IN",{
+timeZone:"Asia/Kolkata",
+hour:"numeric",
+minute:"numeric",
+second:"numeric",
+hour12:true
 });
 
 let activeCount = 0;
@@ -92,9 +92,6 @@ return;
 
 }
 
-
-/* Active buggy */
-
 activeCount++;
 
 let icon = greenIcon;
@@ -111,12 +108,11 @@ if(markers[id]){
 markers[id].setLatLng([lat,lng]);
 markers[id].setIcon(icon);
 
-}
-else{
+}else{
 
 markers[id] = L.marker([lat,lng],{icon:icon})
 .addTo(map)
-.bindPopup("Buggy: "+id);
+.bindPopup("<b>"+id+"</b>");
 
 }
 
@@ -129,30 +125,27 @@ document.getElementById("activeBuggies").innerText =
 
 }
 
-
-/* Refresh every 5 seconds */
-
-setInterval(updateMap, 5000);
+setInterval(updateMap,5000);
 updateMap();
 
 
-/* ----------------------------- */
+/* ===================================================== */
 /* PASSENGER REQUEST SYSTEM */
-/* ----------------------------- */
+/* ===================================================== */
 
 const blocks = {
 
-CV_RAMAN: {name:"CV Raman", lat:16.4638, lng:80.5074},
+CV_RAMAN:{name:"CV Raman",lat:16.4638,lng:80.5074},
 
-SR_BLOCK: {name:"SR Block", lat:16.4631, lng:80.5063},
+SR_BLOCK:{name:"SR Block",lat:16.4631,lng:80.5063},
 
-ADMIN: {name:"Admin", lat:16.4625, lng:80.5070},
+ADMIN:{name:"Admin",lat:16.4625,lng:80.5070},
 
-X_LAB: {name:"X Lab", lat:16.4636, lng:80.5059},
+X_LAB:{name:"X Lab",lat:16.4636,lng:80.5059},
 
-JC_BOSE: {name:"JC Bose", lat:16.4642, lng:80.5068},
+JC_BOSE:{name:"JC Bose",lat:16.4642,lng:80.5068},
 
-GATE6: {name:"Gate 6 Parking", lat:16.4650, lng:80.5075}
+GATE6:{name:"Gate 6 Parking",lat:16.4650,lng:80.5075}
 
 };
 
@@ -160,20 +153,22 @@ const requestMarkers = {};
 const requestsRef = firebase.database().ref("requests");
 
 
-/* Listen for demand updates */
+/* Demand listener */
 
-requestsRef.on("value", function(snapshot){
+requestsRef.on("value",function(snapshot){
 
-/* Reset all markers */
+let highestDemand = 0;
+let highestBlock = null;
 
-Object.keys(blocks).forEach(function(block){
+/* Remove previous markers */
 
-if(requestMarkers[block]){
+Object.keys(requestMarkers).forEach(function(block){
+
 map.removeLayer(requestMarkers[block]);
 delete requestMarkers[block];
-}
 
 });
+
 
 snapshot.forEach(function(child){
 
@@ -182,33 +177,52 @@ const data = child.val();
 
 if(!blocks[block]) return;
 
-let count = 0;
-
-if(data && data.count !== undefined){
-count = data.count;
-}
-
+const count = data?.count || 0;
 const info = blocks[block];
 
+if(count <= 0) return;
 
-/* Show marker only if requests exist */
 
-if(count > 0){
+/* Track highest demand */
+
+if(count > highestDemand){
+highestDemand = count;
+highestBlock = block;
+}
+
+
+/* Create marker */
 
 requestMarkers[block] = L.marker([info.lat,info.lng])
 .addTo(map)
-.bindPopup("<b>"+info.name+"</b><br>Requests: "+count);
+.bindPopup(
+"<b>"+info.name+"</b><br>"+
+"Waiting passengers: "+count
+);
+
+});
+
+
+/* Highlight highest demand */
+
+if(highestBlock && requestMarkers[highestBlock]){
+
+requestMarkers[highestBlock].setIcon(
+L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
+iconSize:[42,42],
+iconAnchor:[21,21]
+})
+);
 
 }
 
 });
 
-});
 
-
-/* ----------------------------- */
+/* ===================================================== */
 /* PASSENGER REQUEST BUTTON */
-/* ----------------------------- */
+/* ===================================================== */
 
 function requestBuggy(block){
 
@@ -221,7 +235,7 @@ const diff = Date.now() - lastRequest;
 if(diff < 600000){
 
 document.getElementById("requestStatus").innerText =
-"You have already requested a buggy. Please wait 10 minutes.";
+"You already requested a buggy. Please wait a few minutes.";
 
 return;
 
@@ -230,7 +244,7 @@ return;
 }
 
 
-/* Write request safely */
+/* Safe request increment */
 
 firebase.database()
 .ref("requests/"+block)
@@ -245,17 +259,17 @@ return {count:(data.count || 0) + 1};
 });
 
 
-localStorage.setItem("lastBuggyRequest", Date.now());
+localStorage.setItem("lastBuggyRequest",Date.now());
 
 document.getElementById("requestStatus").innerText =
-"Your request has been sent. A buggy will arrive shortly.";
+"Request sent successfully. A buggy will arrive soon.";
 
 }
 
 
-/* ----------------------------- */
+/* ===================================================== */
 /* DRIVER BOARDED BUTTON */
-/* ----------------------------- */
+/* ===================================================== */
 
 function boarded(block){
 

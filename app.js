@@ -20,7 +20,9 @@ maxZoom:19
 }).addTo(map);
 
 
-/* Marker storage */
+/* ----------------------------- */
+/* BUGGY TRACKING SECTION */
+/* ----------------------------- */
 
 const markers = {};
 
@@ -134,8 +136,6 @@ markers[id] = L.marker([lat,lng],{icon:icon})
 });
 
 
-/* Update active buggy counter */
-
 document.getElementById("activeBuggies").innerText =
 "Active Buggies: " + activeCount;
 
@@ -171,12 +171,7 @@ JC_BOSE: {name:"JC Bose", lat:16.4642, lng:80.5068}
 };
 
 
-/* Request marker storage */
-
 const requestMarkers = {};
-
-
-/* Firebase request reference */
 
 const requestsRef = firebase.database().ref("requests");
 
@@ -193,7 +188,7 @@ const info = blocks[block];
 if(!info) return;
 
 
-/* If requests > 0 show marker */
+/* Show marker if requests exist */
 
 if(count > 0){
 
@@ -210,7 +205,7 @@ requestMarkers[block].bindPopup(
 }
 
 
-/* If requests = 0 remove marker */
+/* Remove marker if no requests */
 
 else{
 
@@ -226,3 +221,46 @@ delete requestMarkers[block];
 });
 
 });
+
+
+/* ----------------------------- */
+/* REQUEST BUTTON FUNCTION */
+/* ----------------------------- */
+
+function requestBuggy(block){
+
+const lastRequest = localStorage.getItem(block);
+
+if(lastRequest){
+
+const diff = Date.now() - lastRequest;
+
+if(diff < 600000){
+
+document.getElementById("requestStatus").innerText =
+"You already requested recently. Please wait 10 minutes.";
+
+return;
+
+}
+
+}
+
+
+/* Increase request count */
+
+firebase.database()
+.ref("requests/"+block+"/count")
+.transaction(function(count){
+
+return (count || 0) + 1;
+
+});
+
+
+localStorage.setItem(block, Date.now());
+
+document.getElementById("requestStatus").innerText =
+"Buggy request sent successfully.";
+
+}

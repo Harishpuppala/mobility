@@ -7,6 +7,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
@@ -27,7 +30,7 @@ background:white;
 padding:25px;
 border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
-width:400px;
+width:420px;
 text-align:center;
 }
 
@@ -60,6 +63,10 @@ button:hover{
 background:#145A1A;
 }
 
+.boarded{
+background:#0D47A1;
+}
+
 #driverPanel{
 margin-top:20px;
 display:none;
@@ -71,7 +78,15 @@ font-size:14px;
 color:#444;
 }
 
-/* Passenger row */
+/* Mini map */
+
+#driverMap{
+height:200px;
+border-radius:8px;
+margin-bottom:15px;
+}
+
+/* Passenger rows */
 
 .block{
 display:flex;
@@ -85,8 +100,6 @@ border:1px solid #eee;
 gap:6px;
 }
 
-/* Location */
-
 .location{
 width:120px;
 text-align:left;
@@ -97,8 +110,6 @@ padding:4px 6px;
 border-radius:4px;
 }
 
-/* Passenger count */
-
 .count{
 font-weight:bold;
 font-size:16px;
@@ -107,16 +118,6 @@ text-align:center;
 background:#FFF3E0;
 padding:4px;
 border-radius:4px;
-}
-
-/* Boarded button */
-
-.boarded{
-background:#0D47A1;
-}
-
-.boarded:hover{
-background:#08306b;
 }
 
 </style>
@@ -139,62 +140,11 @@ background:#08306b;
 
 <p id="status" class="status"></p>
 
+<div id="driverMap"></div>
+
 <h3>Waiting Passengers</h3>
 
-
-<div class="block">
-<span class="location">CV Raman</span>
-<span id="count_CV_RAMAN" class="count">0</span>
-<button class="boarded" onclick="boarded('CV_RAMAN')">Boarded</button>
-<button onclick="setRemaining('CV_RAMAN',2)">2</button>
-<button onclick="setRemaining('CV_RAMAN',4)">4</button>
-<button onclick="setRemaining('CV_RAMAN',6)">6</button>
-</div>
-
-<div class="block">
-<span class="location">SR Block</span>
-<span id="count_SR_BLOCK" class="count">0</span>
-<button class="boarded" onclick="boarded('SR_BLOCK')">Boarded</button>
-<button onclick="setRemaining('SR_BLOCK',2)">2</button>
-<button onclick="setRemaining('SR_BLOCK',4)">4</button>
-<button onclick="setRemaining('SR_BLOCK',6)">6</button>
-</div>
-
-<div class="block">
-<span class="location">Admin</span>
-<span id="count_ADMIN" class="count">0</span>
-<button class="boarded" onclick="boarded('ADMIN')">Boarded</button>
-<button onclick="setRemaining('ADMIN',2)">2</button>
-<button onclick="setRemaining('ADMIN',4)">4</button>
-<button onclick="setRemaining('ADMIN',6)">6</button>
-</div>
-
-<div class="block">
-<span class="location">X Lab</span>
-<span id="count_X_LAB" class="count">0</span>
-<button class="boarded" onclick="boarded('X_LAB')">Boarded</button>
-<button onclick="setRemaining('X_LAB',2)">2</button>
-<button onclick="setRemaining('X_LAB',4)">4</button>
-<button onclick="setRemaining('X_LAB',6)">6</button>
-</div>
-
-<div class="block">
-<span class="location">JC Bose</span>
-<span id="count_JC_BOSE" class="count">0</span>
-<button class="boarded" onclick="boarded('JC_BOSE')">Boarded</button>
-<button onclick="setRemaining('JC_BOSE',2)">2</button>
-<button onclick="setRemaining('JC_BOSE',4)">4</button>
-<button onclick="setRemaining('JC_BOSE',6)">6</button>
-</div>
-
-<div class="block">
-<span class="location">Gate 6</span>
-<span id="count_GATE6" class="count">0</span>
-<button class="boarded" onclick="boarded('GATE6')">Boarded</button>
-<button onclick="setRemaining('GATE6',2)">2</button>
-<button onclick="setRemaining('GATE6',4)">4</button>
-<button onclick="setRemaining('GATE6',6)">6</button>
-</div>
+<div id="demandList"></div>
 
 </div>
 
@@ -202,19 +152,19 @@ background:#08306b;
 
 <script>
 
-const firebaseConfig = {
-apiKey: "AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
-authDomain: "mobility-ca790.firebaseapp.com",
-databaseURL: "https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "mobility-ca790",
-storageBucket: "mobility-ca790.firebasestorage.app",
-messagingSenderId: "832491995447",
-appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
+const firebaseConfig={
+apiKey:"AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
+authDomain:"mobility-ca790.firebaseapp.com",
+databaseURL:"https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId:"mobility-ca790",
+storageBucket:"mobility-ca790.firebasestorage.app",
+messagingSenderId:"832491995447",
+appId:"1:832491995447:web:9f5de3b844e3119f79ab2"
 };
 
 firebase.initializeApp(firebaseConfig);
 
-const pinBuggyMap = {
+const pinBuggyMap={
 "1421":"buggy1",
 "2632":"buggy2",
 "3743":"buggy3",
@@ -225,43 +175,52 @@ const pinBuggyMap = {
 "8398":"buggy8"
 };
 
-let currentBuggy = null;
-let wakeLock = null;
+let currentBuggy=null;
+let wakeLock=null;
 
-/* Warn before closing */
+const blockLocations={
+CV_RAMAN:[16.4638,80.5074],
+SR_BLOCK:[16.4631,80.5063],
+ADMIN:[16.4625,80.5070],
+X_LAB:[16.4636,80.5059],
+JC_BOSE:[16.4642,80.5068],
+GATE6:[16.4650,80.5075]
+};
 
-window.addEventListener("beforeunload", function (e){
+let driverMap;
+let buggyMarkers={};
+let demandMarkers={};
+
+window.addEventListener("beforeunload",function(e){
 e.preventDefault();
-e.returnValue = "Location sharing will stop if you close this page.";
+e.returnValue="Location sharing will stop if you close this page.";
 });
-
-/* Keep screen awake */
 
 async function keepScreenAwake(){
 try{
-wakeLock = await navigator.wakeLock.request("screen");
-}catch(err){
-console.log(err);
+wakeLock=await navigator.wakeLock.request("screen");
+}catch(err){}
 }
-}
-
-/* Login */
 
 function authenticate(){
 
-const pin = document.getElementById("pinInput").value;
+const pin=document.getElementById("pinInput").value;
 
 if(pinBuggyMap[pin]){
 
-currentBuggy = pinBuggyMap[pin];
+currentBuggy=pinBuggyMap[pin];
 
 document.getElementById("driverPanel").style.display="block";
 
-document.getElementById("loginStatus").innerText=
-"Login successful - "+currentBuggy;
+document.getElementById("loginStatus").innerText="Login successful - "+currentBuggy;
+
+initializeMap();
 
 startSharing();
 keepScreenAwake();
+
+listenDemand();
+listenBuggies();
 
 }
 else{
@@ -272,7 +231,15 @@ document.getElementById("loginStatus").innerText="Invalid PIN";
 
 }
 
-/* Location sharing */
+function initializeMap(){
+
+driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(driverMap);
+
+}
 
 function startSharing(){
 
@@ -282,7 +249,7 @@ navigator.geolocation.watchPosition(function(position){
 
 const now=Date.now();
 
-if(now-lastUpdateTime<5000) return;
+if(now-lastUpdateTime<5000)return;
 
 lastUpdateTime=now;
 
@@ -307,49 +274,106 @@ maximumAge:3000
 
 }
 
-/* Listen for demand */
+/* Listen buggy locations */
 
-firebase.database().ref("requests").on("value",function(snapshot){
+function listenBuggies(){
 
-const blocks=["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE","GATE6"];
+firebase.database().ref("drivers").on("value",function(snapshot){
 
-blocks.forEach(function(block){
-
-const element=document.getElementById("count_"+block);
-if(element) element.innerText=0;
-
-});
+Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
+buggyMarkers={};
 
 snapshot.forEach(function(child){
 
-const block=child.key;
 const data=child.val();
-const count=data.count||0;
 
-const element=document.getElementById("count_"+block);
-if(element) element.innerText=count;
+if(!data) return;
+
+buggyMarkers[child.key]=L.marker([data.lat,data.lng])
+.addTo(driverMap)
+.bindPopup(child.key);
 
 });
 
 });
-
-/* Boarded */
-
-function boarded(block){
-
-firebase.database()
-.ref("requests/"+block+"/count")
-.set(0);
 
 }
 
-/* Remaining passengers */
+/* Listen demand */
+
+function listenDemand(){
+
+firebase.database().ref("requests").on("value",function(snapshot){
+
+let demandArray=[];
+
+snapshot.forEach(function(child){
+
+demandArray.push({
+block:child.key,
+count:child.val().count||0
+});
+
+});
+
+/* sort by demand */
+
+demandArray.sort((a,b)=>b.count-a.count);
+
+/* update UI */
+
+const container=document.getElementById("demandList");
+container.innerHTML="";
+
+/* clear map markers */
+
+Object.values(demandMarkers).forEach(m=>driverMap.removeLayer(m));
+demandMarkers={};
+
+demandArray.forEach(function(item){
+
+const row=document.createElement("div");
+row.className="block";
+
+row.innerHTML=`
+<span class="location">${item.block.replace("_"," ")}</span>
+<span class="count">${item.count}</span>
+<button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
+<button onclick="setRemaining('${item.block}',2)">2</button>
+<button onclick="setRemaining('${item.block}',4)">4</button>
+<button onclick="setRemaining('${item.block}',6)">6</button>
+`;
+
+container.appendChild(row);
+
+/* show marker */
+
+if(item.count>0){
+
+const loc=blockLocations[item.block];
+
+demandMarkers[item.block]=L.circleMarker(loc,{
+radius:8,
+color:"red"
+}).addTo(driverMap);
+
+}
+
+});
+
+});
+
+}
+
+function boarded(block){
+
+firebase.database().ref("requests/"+block+"/count").set(0);
+
+}
 
 function setRemaining(block,value){
 
-firebase.database()
-.ref("requests/"+block+"/count")
-.set(value);
+firebase.database().ref("requests/"+block+"/count").set(value);
 
 }
 

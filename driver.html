@@ -128,6 +128,32 @@ const pinBuggyMap = {
 };
 
 let currentBuggy = null;
+let wakeLock = null;
+
+
+/* Warn before closing page */
+
+window.addEventListener("beforeunload", function (e) {
+e.preventDefault();
+e.returnValue = "Location sharing will stop if you close this page.";
+});
+
+
+/* Keep screen awake */
+
+async function keepScreenAwake(){
+try{
+
+wakeLock = await navigator.wakeLock.request("screen");
+
+wakeLock.addEventListener("release", () => {
+console.log("Wake lock released");
+});
+
+}catch(err){
+console.log(err);
+}
+}
 
 
 function authenticate(){
@@ -142,6 +168,10 @@ document.getElementById("driverPanel").style.display = "block";
 
 document.getElementById("loginStatus").innerText =
 "Login successful - " + currentBuggy;
+
+/* activate wake lock */
+
+keepScreenAwake();
 
 }else{
 

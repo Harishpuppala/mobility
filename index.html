@@ -5,6 +5,8 @@
 
 <title>SRMAP Buggy</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="style.css">
 
@@ -36,7 +38,26 @@ Centre for Geospatial Technology
 
 </div>
 
+
+<!-- Request Panel -->
+
+<div class="request-panel">
+
+<b>Request Buggy</b>
+
+<button onclick="requestBuggy('CV_RAMAN')">CV Raman</button>
+<button onclick="requestBuggy('SR_BLOCK')">SR Block</button>
+<button onclick="requestBuggy('ADMIN')">Admin</button>
+<button onclick="requestBuggy('X_LAB')">X Lab</button>
+<button onclick="requestBuggy('JC_BOSE')">JC Bose</button>
+
+<p id="requestStatus"></p>
+
+</div>
+
+
 <div id="map"></div>
+
 
 <div class="legend">
 <b>Legend</b><br>

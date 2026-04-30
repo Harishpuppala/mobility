@@ -152,3 +152,77 @@ setInterval(updateMap, 5000);
 /* Initial load */
 
 updateMap();
+
+
+
+/* ----------------------------- */
+/* REQUEST MARKERS SECTION */
+/* ----------------------------- */
+
+
+/* Block locations */
+
+const blocks = {
+CV_RAMAN: {name:"CV Raman", lat:16.4638, lng:80.5074},
+SR_BLOCK: {name:"SR Block", lat:16.4631, lng:80.5063},
+ADMIN: {name:"Admin", lat:16.4625, lng:80.5070},
+X_LAB: {name:"X Lab", lat:16.4636, lng:80.5059},
+JC_BOSE: {name:"JC Bose", lat:16.4642, lng:80.5068}
+};
+
+
+/* Request marker storage */
+
+const requestMarkers = {};
+
+
+/* Firebase request reference */
+
+const requestsRef = firebase.database().ref("requests");
+
+
+requestsRef.on("value", function(snapshot){
+
+snapshot.forEach(function(child){
+
+const block = child.key;
+const count = child.val().count || 0;
+
+const info = blocks[block];
+
+if(!info) return;
+
+
+/* If requests > 0 show marker */
+
+if(count > 0){
+
+if(!requestMarkers[block]){
+
+requestMarkers[block] = L.marker([info.lat,info.lng]).addTo(map);
+
+}
+
+requestMarkers[block].bindPopup(
+"<b>"+info.name+"</b><br>Requests: "+count
+);
+
+}
+
+
+/* If requests = 0 remove marker */
+
+else{
+
+if(requestMarkers[block]){
+
+map.removeLayer(requestMarkers[block]);
+delete requestMarkers[block];
+
+}
+
+}
+
+});
+
+});

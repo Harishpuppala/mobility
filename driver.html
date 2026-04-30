@@ -27,7 +27,7 @@ background:white;
 padding:30px;
 border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
-width:360px;
+width:380px;
 text-align:center;
 }
 
@@ -47,8 +47,7 @@ box-sizing:border-box;
 }
 
 button{
-margin:4px;
-padding:8px 10px;
+padding:6px 8px;
 font-size:13px;
 background:#1B5E20;
 color:white;
@@ -73,18 +72,35 @@ color:#444;
 }
 
 .block{
-margin-top:12px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-top:10px;
 padding-top:6px;
 border-top:1px solid #eee;
+gap:6px;
+flex-wrap:nowrap;
+}
+
+.location{
+width:120px;
+text-align:left;
+font-size:14px;
 }
 
 .count{
 font-weight:bold;
 font-size:16px;
+width:25px;
+text-align:center;
 }
 
-.remaining-buttons{
-margin-top:4px;
+.boarded{
+background:#0D47A1;
+}
+
+.boarded:hover{
+background:#08306b;
 }
 
 </style>
@@ -110,87 +126,63 @@ margin-top:4px;
 <h3>Waiting Passengers</h3>
 
 
-<!-- CV Raman -->
 <div class="block">
-CV Raman : <span id="count_CV_RAMAN" class="count">0</span><br>
-
-<button onclick="boarded('CV_RAMAN')">Boarded</button>
-
-<div class="remaining-buttons">
+<span class="location">CV Raman</span>
+<span id="count_CV_RAMAN" class="count">0</span>
+<button onclick="boarded('CV_RAMAN')" class="boarded">Boarded</button>
 <button onclick="setRemaining('CV_RAMAN',2)">2</button>
 <button onclick="setRemaining('CV_RAMAN',4)">4</button>
 <button onclick="setRemaining('CV_RAMAN',6)">6</button>
 </div>
-</div>
 
 
-<!-- SR Block -->
 <div class="block">
-SR Block : <span id="count_SR_BLOCK" class="count">0</span><br>
-
-<button onclick="boarded('SR_BLOCK')">Boarded</button>
-
-<div class="remaining-buttons">
+<span class="location">SR Block</span>
+<span id="count_SR_BLOCK" class="count">0</span>
+<button onclick="boarded('SR_BLOCK')" class="boarded">Boarded</button>
 <button onclick="setRemaining('SR_BLOCK',2)">2</button>
 <button onclick="setRemaining('SR_BLOCK',4)">4</button>
 <button onclick="setRemaining('SR_BLOCK',6)">6</button>
 </div>
-</div>
 
 
-<!-- Admin -->
 <div class="block">
-Admin : <span id="count_ADMIN" class="count">0</span><br>
-
-<button onclick="boarded('ADMIN')">Boarded</button>
-
-<div class="remaining-buttons">
+<span class="location">Admin</span>
+<span id="count_ADMIN" class="count">0</span>
+<button onclick="boarded('ADMIN')" class="boarded">Boarded</button>
 <button onclick="setRemaining('ADMIN',2)">2</button>
 <button onclick="setRemaining('ADMIN',4)">4</button>
 <button onclick="setRemaining('ADMIN',6)">6</button>
 </div>
-</div>
 
 
-<!-- X Lab -->
 <div class="block">
-X Lab : <span id="count_X_LAB" class="count">0</span><br>
-
-<button onclick="boarded('X_LAB')">Boarded</button>
-
-<div class="remaining-buttons">
+<span class="location">X Lab</span>
+<span id="count_X_LAB" class="count">0</span>
+<button onclick="boarded('X_LAB')" class="boarded">Boarded</button>
 <button onclick="setRemaining('X_LAB',2)">2</button>
 <button onclick="setRemaining('X_LAB',4)">4</button>
 <button onclick="setRemaining('X_LAB',6)">6</button>
 </div>
-</div>
 
 
-<!-- JC Bose -->
 <div class="block">
-JC Bose : <span id="count_JC_BOSE" class="count">0</span><br>
-
-<button onclick="boarded('JC_BOSE')">Boarded</button>
-
-<div class="remaining-buttons">
+<span class="location">JC Bose</span>
+<span id="count_JC_BOSE" class="count">0</span>
+<button onclick="boarded('JC_BOSE')" class="boarded">Boarded</button>
 <button onclick="setRemaining('JC_BOSE',2)">2</button>
 <button onclick="setRemaining('JC_BOSE',4)">4</button>
 <button onclick="setRemaining('JC_BOSE',6)">6</button>
 </div>
-</div>
 
 
-<!-- Gate 6 -->
 <div class="block">
-Gate 6 Parking : <span id="count_GATE6" class="count">0</span><br>
-
-<button onclick="boarded('GATE6')">Boarded</button>
-
-<div class="remaining-buttons">
+<span class="location">Gate 6</span>
+<span id="count_GATE6" class="count">0</span>
+<button onclick="boarded('GATE6')" class="boarded">Boarded</button>
 <button onclick="setRemaining('GATE6',2)">2</button>
 <button onclick="setRemaining('GATE6',4)">4</button>
 <button onclick="setRemaining('GATE6',6)">6</button>
-</div>
 </div>
 
 
@@ -212,9 +204,6 @@ appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
 
 firebase.initializeApp(firebaseConfig);
 
-
-/* PIN mapping */
-
 const pinBuggyMap = {
 "1421":"buggy1",
 "2632":"buggy2",
@@ -229,16 +218,10 @@ const pinBuggyMap = {
 let currentBuggy = null;
 let wakeLock = null;
 
-
-/* Warn before closing page */
-
 window.addEventListener("beforeunload", function (e) {
 e.preventDefault();
 e.returnValue = "Location sharing will stop if you close this page.";
 });
-
-
-/* Keep screen awake */
 
 async function keepScreenAwake(){
 try{
@@ -247,9 +230,6 @@ wakeLock = await navigator.wakeLock.request("screen");
 console.log(err);
 }
 }
-
-
-/* LOGIN */
 
 function authenticate(){
 
@@ -275,9 +255,6 @@ document.getElementById("loginStatus").innerText =
 }
 
 }
-
-
-/* LOCATION SHARING */
 
 function startSharing(){
 
@@ -314,9 +291,6 @@ maximumAge:3000
 
 }
 
-
-/* LISTEN FOR PASSENGER DEMAND */
-
 firebase.database().ref("requests").on("value", function(snapshot){
 
 const blocks = ["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE","GATE6"];
@@ -343,9 +317,6 @@ if(element) element.innerText = count;
 
 });
 
-
-/* BOARDED → RESET DEMAND */
-
 function boarded(block){
 
 firebase.database()
@@ -353,9 +324,6 @@ firebase.database()
 .set(0);
 
 }
-
-
-/* SET REMAINING PASSENGERS */
 
 function setRemaining(block,value){
 

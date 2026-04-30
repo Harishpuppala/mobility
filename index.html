@@ -53,17 +53,17 @@ Centre for Geospatial Technology
 
 <b>Request Buggy</b>
 
-<button onclick="requestBuggy('CV_RAMAN')">CV Raman</button>
+<button class="reqBtn" onclick="sendRequest('CV_RAMAN')">CV Raman</button>
 
-<button onclick="requestBuggy('SR_BLOCK')">SR Block</button>
+<button class="reqBtn" onclick="sendRequest('SR_BLOCK')">SR Block</button>
 
-<button onclick="requestBuggy('ADMIN')">Admin</button>
+<button class="reqBtn" onclick="sendRequest('ADMIN')">Admin</button>
 
-<button onclick="requestBuggy('X_LAB')">X Lab</button>
+<button class="reqBtn" onclick="sendRequest('X_LAB')">X Lab</button>
 
-<button onclick="requestBuggy('JC_BOSE')">JC Bose</button>
+<button class="reqBtn" onclick="sendRequest('JC_BOSE')">JC Bose</button>
 
-<button onclick="requestBuggy('GATE6')">Gate 6 Parking</button>
+<button class="reqBtn" onclick="sendRequest('GATE6')">Gate 6 Parking</button>
 
 <p id="requestStatus"></p>
 
@@ -93,6 +93,61 @@ Inactive Buggy
 <!-- ================= APPLICATION SCRIPT ================= -->
 
 <script src="app.js"></script>
+
+<script>
+
+/* Prevent multiple requests */
+
+function sendRequest(block){
+
+const lastRequest = localStorage.getItem("lastBuggyRequestBlock");
+const lastTime = localStorage.getItem("lastBuggyRequestTime");
+
+if(lastTime){
+
+const diff = Date.now() - lastTime;
+
+if(diff < 600000){
+
+document.getElementById("requestStatus").innerText =
+"You already requested a buggy at " + lastRequest +
+". Please wait a few minutes.";
+
+return;
+
+}
+
+}
+
+
+/* Call main request function */
+
+requestBuggy(block);
+
+
+/* Save locally */
+
+localStorage.setItem("lastBuggyRequestBlock",block);
+localStorage.setItem("lastBuggyRequestTime",Date.now());
+
+
+/* Disable buttons */
+
+const buttons = document.querySelectorAll(".reqBtn");
+
+buttons.forEach(btn=>{
+btn.disabled = true;
+btn.style.opacity = 0.5;
+});
+
+
+document.getElementById("requestStatus").innerText =
+"Request sent from " + block.replace("_"," ") +
+". Please wait for the buggy.";
+
+}
+
+</script>
 
 </body>
 

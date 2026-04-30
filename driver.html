@@ -205,12 +205,7 @@ document.getElementById("driverPanel").style.display = "block";
 document.getElementById("loginStatus").innerText =
 "Login successful - " + currentBuggy;
 
-/* Start location sharing */
-
 startSharing();
-
-/* Prevent screen sleep */
-
 keepScreenAwake();
 
 }else{
@@ -232,8 +227,6 @@ let lastUpdateTime = 0;
 navigator.geolocation.watchPosition(function(position){
 
 const now = Date.now();
-
-/* limit updates to every 5 seconds */
 
 if(now - lastUpdateTime < 5000){
 return;
@@ -272,10 +265,23 @@ maximumAge:3000
 
 firebase.database().ref("requests").on("value", function(snapshot){
 
-const blocks = ["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE"];
+const blocks = [
+"CV_RAMAN",
+"SR_BLOCK",
+"ADMIN",
+"X_LAB",
+"JC_BOSE",
+"GATE6"
+];
 
 blocks.forEach(function(block){
-document.getElementById("count_"+block).innerText = 0;
+
+const element = document.getElementById("count_"+block);
+
+if(element){
+element.innerText = 0;
+}
+
 });
 
 snapshot.forEach(function(child){

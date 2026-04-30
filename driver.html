@@ -24,10 +24,10 @@ height:100vh;
 
 .container{
 background:white;
-padding:30px;
+padding:25px;
 border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
-width:380px;
+width:400px;
 text-align:center;
 }
 
@@ -71,29 +71,45 @@ font-size:14px;
 color:#444;
 }
 
+/* Passenger row */
+
 .block{
 display:flex;
 align-items:center;
 justify-content:space-between;
 margin-top:10px;
-padding-top:6px;
-border-top:1px solid #eee;
+padding:6px;
+border-radius:6px;
+background:#fafafa;
+border:1px solid #eee;
 gap:6px;
-flex-wrap:nowrap;
 }
+
+/* Location */
 
 .location{
 width:120px;
 text-align:left;
 font-size:14px;
+font-weight:bold;
+background:#E8F5E9;
+padding:4px 6px;
+border-radius:4px;
 }
+
+/* Passenger count */
 
 .count{
 font-weight:bold;
 font-size:16px;
-width:25px;
+width:30px;
 text-align:center;
+background:#FFF3E0;
+padding:4px;
+border-radius:4px;
 }
+
+/* Boarded button */
 
 .boarded{
 background:#0D47A1;
@@ -129,62 +145,56 @@ background:#08306b;
 <div class="block">
 <span class="location">CV Raman</span>
 <span id="count_CV_RAMAN" class="count">0</span>
-<button onclick="boarded('CV_RAMAN')" class="boarded">Boarded</button>
+<button class="boarded" onclick="boarded('CV_RAMAN')">Boarded</button>
 <button onclick="setRemaining('CV_RAMAN',2)">2</button>
 <button onclick="setRemaining('CV_RAMAN',4)">4</button>
 <button onclick="setRemaining('CV_RAMAN',6)">6</button>
 </div>
 
-
 <div class="block">
 <span class="location">SR Block</span>
 <span id="count_SR_BLOCK" class="count">0</span>
-<button onclick="boarded('SR_BLOCK')" class="boarded">Boarded</button>
+<button class="boarded" onclick="boarded('SR_BLOCK')">Boarded</button>
 <button onclick="setRemaining('SR_BLOCK',2)">2</button>
 <button onclick="setRemaining('SR_BLOCK',4)">4</button>
 <button onclick="setRemaining('SR_BLOCK',6)">6</button>
 </div>
 
-
 <div class="block">
 <span class="location">Admin</span>
 <span id="count_ADMIN" class="count">0</span>
-<button onclick="boarded('ADMIN')" class="boarded">Boarded</button>
+<button class="boarded" onclick="boarded('ADMIN')">Boarded</button>
 <button onclick="setRemaining('ADMIN',2)">2</button>
 <button onclick="setRemaining('ADMIN',4)">4</button>
 <button onclick="setRemaining('ADMIN',6)">6</button>
 </div>
 
-
 <div class="block">
 <span class="location">X Lab</span>
 <span id="count_X_LAB" class="count">0</span>
-<button onclick="boarded('X_LAB')" class="boarded">Boarded</button>
+<button class="boarded" onclick="boarded('X_LAB')">Boarded</button>
 <button onclick="setRemaining('X_LAB',2)">2</button>
 <button onclick="setRemaining('X_LAB',4)">4</button>
 <button onclick="setRemaining('X_LAB',6)">6</button>
 </div>
 
-
 <div class="block">
 <span class="location">JC Bose</span>
 <span id="count_JC_BOSE" class="count">0</span>
-<button onclick="boarded('JC_BOSE')" class="boarded">Boarded</button>
+<button class="boarded" onclick="boarded('JC_BOSE')">Boarded</button>
 <button onclick="setRemaining('JC_BOSE',2)">2</button>
 <button onclick="setRemaining('JC_BOSE',4)">4</button>
 <button onclick="setRemaining('JC_BOSE',6)">6</button>
 </div>
 
-
 <div class="block">
 <span class="location">Gate 6</span>
 <span id="count_GATE6" class="count">0</span>
-<button onclick="boarded('GATE6')" class="boarded">Boarded</button>
+<button class="boarded" onclick="boarded('GATE6')">Boarded</button>
 <button onclick="setRemaining('GATE6',2)">2</button>
 <button onclick="setRemaining('GATE6',4)">4</button>
 <button onclick="setRemaining('GATE6',6)">6</button>
 </div>
-
 
 </div>
 
@@ -218,10 +228,14 @@ const pinBuggyMap = {
 let currentBuggy = null;
 let wakeLock = null;
 
-window.addEventListener("beforeunload", function (e) {
+/* Warn before closing */
+
+window.addEventListener("beforeunload", function (e){
 e.preventDefault();
 e.returnValue = "Location sharing will stop if you close this page.";
 });
+
+/* Keep screen awake */
 
 async function keepScreenAwake(){
 try{
@@ -231,6 +245,8 @@ console.log(err);
 }
 }
 
+/* Login */
+
 function authenticate(){
 
 const pin = document.getElementById("pinInput").value;
@@ -239,34 +255,36 @@ if(pinBuggyMap[pin]){
 
 currentBuggy = pinBuggyMap[pin];
 
-document.getElementById("driverPanel").style.display = "block";
+document.getElementById("driverPanel").style.display="block";
 
-document.getElementById("loginStatus").innerText =
-"Login successful - " + currentBuggy;
+document.getElementById("loginStatus").innerText=
+"Login successful - "+currentBuggy;
 
 startSharing();
 keepScreenAwake();
 
-}else{
+}
+else{
 
-document.getElementById("loginStatus").innerText =
-"Invalid PIN";
+document.getElementById("loginStatus").innerText="Invalid PIN";
 
 }
 
 }
+
+/* Location sharing */
 
 function startSharing(){
 
-let lastUpdateTime = 0;
+let lastUpdateTime=0;
 
 navigator.geolocation.watchPosition(function(position){
 
-const now = Date.now();
+const now=Date.now();
 
-if(now - lastUpdateTime < 5000) return;
+if(now-lastUpdateTime<5000) return;
 
-lastUpdateTime = now;
+lastUpdateTime=now;
 
 firebase.database().ref("drivers/"+currentBuggy).set({
 lat:position.coords.latitude,
@@ -274,14 +292,12 @@ lng:position.coords.longitude,
 time:now
 });
 
-document.getElementById("status").innerText =
-"🟢 Location sharing active";
+document.getElementById("status").innerText="🟢 Location sharing active";
 
 },
 function(error){
 
-document.getElementById("status").innerText =
-"Location error: " + error.message;
+document.getElementById("status").innerText="Location error: "+error.message;
 
 },
 {
@@ -291,31 +307,33 @@ maximumAge:3000
 
 }
 
-firebase.database().ref("requests").on("value", function(snapshot){
+/* Listen for demand */
 
-const blocks = ["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE","GATE6"];
+firebase.database().ref("requests").on("value",function(snapshot){
+
+const blocks=["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE","GATE6"];
 
 blocks.forEach(function(block){
 
-const element = document.getElementById("count_"+block);
-
-if(element) element.innerText = 0;
+const element=document.getElementById("count_"+block);
+if(element) element.innerText=0;
 
 });
 
 snapshot.forEach(function(child){
 
-const block = child.key;
-const data = child.val();
-const count = data.count || 0;
+const block=child.key;
+const data=child.val();
+const count=data.count||0;
 
-const element = document.getElementById("count_"+block);
+const element=document.getElementById("count_"+block);
+if(element) element.innerText=count;
 
-if(element) element.innerText = count;
+});
 
 });
 
-});
+/* Boarded */
 
 function boarded(block){
 
@@ -324,6 +342,8 @@ firebase.database()
 .set(0);
 
 }
+
+/* Remaining passengers */
 
 function setRemaining(block,value){
 

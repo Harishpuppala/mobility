@@ -7,16 +7,24 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- Leaflet Map -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<!-- Custom Styles -->
 <link rel="stylesheet" href="style.css">
 
+<!-- Map Library -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 </head>
 
 <body>
+
+<!-- ================= HEADER ================= -->
 
 <div class="header">
 
@@ -39,17 +47,22 @@ Centre for Geospatial Technology
 </div>
 
 
-<!-- Request Panel (Passengers only) -->
+<!-- ================= PASSENGER REQUEST PANEL ================= -->
 
 <div class="request-panel">
 
 <b>Request Buggy</b>
 
 <button onclick="requestBuggy('CV_RAMAN')">CV Raman</button>
+
 <button onclick="requestBuggy('SR_BLOCK')">SR Block</button>
+
 <button onclick="requestBuggy('ADMIN')">Admin</button>
+
 <button onclick="requestBuggy('X_LAB')">X Lab</button>
+
 <button onclick="requestBuggy('JC_BOSE')">JC Bose</button>
+
 <button onclick="requestBuggy('GATE6')">Gate 6 Parking</button>
 
 <p id="requestStatus"></p>
@@ -57,14 +70,27 @@ Centre for Geospatial Technology
 </div>
 
 
+<!-- ================= MAP ================= -->
+
 <div id="map"></div>
 
 
+<!-- ================= LEGEND ================= -->
+
 <div class="legend">
+
 <b>Legend</b><br>
-<img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" width="22"> Active Buggy<br>
-<img src="https://cdn-icons-png.flaticon.com/512/744/744467.png" width="22"> Inactive Buggy
+
+<img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" width="22">
+Active Buggy<br>
+
+<img src="https://cdn-icons-png.flaticon.com/512/744/744467.png" width="22">
+Inactive Buggy
+
 </div>
+
+
+<!-- ================= APPLICATION SCRIPT ================= -->
 
 <script src="app.js"></script>
 

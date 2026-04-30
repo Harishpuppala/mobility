@@ -27,7 +27,7 @@ background:white;
 padding:30px;
 border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
-width:320px;
+width:340px;
 text-align:center;
 }
 
@@ -47,10 +47,9 @@ box-sizing:border-box;
 }
 
 button{
-margin-top:18px;
-width:100%;
-padding:12px;
-font-size:16px;
+margin-top:10px;
+padding:10px;
+font-size:14px;
 background:#1B5E20;
 color:white;
 border:none;
@@ -73,6 +72,17 @@ font-size:14px;
 color:#444;
 }
 
+.block{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:8px;
+}
+
+.count{
+font-weight:bold;
+}
+
 </style>
 
 </head>
@@ -81,7 +91,7 @@ color:#444;
 
 <div class="container">
 
-<h2>Buggy PIN</h2>
+<h2>Buggy Driver</h2>
 
 <input type="password" id="pinInput" placeholder="Enter Buggy PIN">
 
@@ -92,6 +102,33 @@ color:#444;
 <div id="driverPanel">
 
 <p id="status" class="status"></p>
+
+<h3>Waiting Passengers</h3>
+
+<div class="block">
+CV Raman : <span id="count_CV_RAMAN" class="count">0</span>
+<button onclick="boarded('CV_RAMAN')">Boarded</button>
+</div>
+
+<div class="block">
+SR Block : <span id="count_SR_BLOCK" class="count">0</span>
+<button onclick="boarded('SR_BLOCK')">Boarded</button>
+</div>
+
+<div class="block">
+Admin : <span id="count_ADMIN" class="count">0</span>
+<button onclick="boarded('ADMIN')">Boarded</button>
+</div>
+
+<div class="block">
+X Lab : <span id="count_X_LAB" class="count">0</span>
+<button onclick="boarded('X_LAB')">Boarded</button>
+</div>
+
+<div class="block">
+JC Bose : <span id="count_JC_BOSE" class="count">0</span>
+<button onclick="boarded('JC_BOSE')">Boarded</button>
+</div>
 
 </div>
 
@@ -141,13 +178,7 @@ e.returnValue = "Location sharing will stop if you close this page.";
 
 async function keepScreenAwake(){
 try{
-
 wakeLock = await navigator.wakeLock.request("screen");
-
-wakeLock.addEventListener("release", () => {
-console.log("Wake lock released");
-});
-
 }catch(err){
 console.log(err);
 }
@@ -169,12 +200,7 @@ document.getElementById("driverPanel").style.display = "block";
 document.getElementById("loginStatus").innerText =
 "Login successful - " + currentBuggy;
 
-/* start location automatically */
-
 startSharing();
-
-/* keep screen awake */
-
 keepScreenAwake();
 
 }else{
@@ -214,6 +240,43 @@ document.getElementById("status").innerText =
 },
 {
 enableHighAccuracy:true
+});
+
+}
+
+
+/* LISTEN FOR PASSENGER DEMAND */
+
+firebase.database().ref("requests").on("value", function(snapshot){
+
+snapshot.forEach(function(child){
+
+const block = child.key;
+const count = child.val().count || 0;
+
+const element = document.getElementById("count_"+block);
+
+if(element){
+element.innerText = count;
+}
+
+});
+
+});
+
+
+/* BOARD PASSENGERS */
+
+function boarded(block){
+
+firebase.database()
+.ref("requests/"+block+"/count")
+.transaction(function(count){
+
+if(count > 0){
+return count - 1;
+}
+
 });
 
 }

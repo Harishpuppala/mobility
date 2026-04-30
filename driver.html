@@ -218,11 +218,23 @@ document.getElementById("loginStatus").innerText =
 }
 
 
-/* LOCATION SHARING */
+/* LOCATION SHARING WITH UPDATE LIMIT */
 
 function startSharing(){
 
+let lastUpdateTime = 0;
+
 navigator.geolocation.watchPosition(function(position){
+
+const now = Date.now();
+
+/* limit updates to every 5 seconds */
+
+if(now - lastUpdateTime < 5000){
+return;
+}
+
+lastUpdateTime = now;
 
 const lat = position.coords.latitude;
 const lng = position.coords.longitude;
@@ -230,7 +242,7 @@ const lng = position.coords.longitude;
 firebase.database().ref("drivers/"+currentBuggy).set({
 lat:lat,
 lng:lng,
-time:Date.now()
+time:now
 });
 
 document.getElementById("status").innerText =
@@ -244,7 +256,8 @@ document.getElementById("status").innerText =
 
 },
 {
-enableHighAccuracy:true
+enableHighAccuracy:true,
+maximumAge:3000
 });
 
 }
@@ -255,8 +268,6 @@ enableHighAccuracy:true
 firebase.database().ref("requests").on("value", function(snapshot){
 
 const blocks = ["CV_RAMAN","SR_BLOCK","ADMIN","X_LAB","JC_BOSE"];
-
-/* Reset counts first */
 
 blocks.forEach(function(block){
 document.getElementById("count_"+block).innerText = 0;

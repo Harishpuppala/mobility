@@ -26,6 +26,7 @@ min-height:100vh;
 padding-top:30px;
 }
 
+/* Container */
 .container{
 background:white;
 padding:25px;
@@ -42,15 +43,22 @@ margin-top:0;
 color:#1B5E20;
 }
 
+/* ✅ Compact PIN input */
 input{
-width:100%;
-padding:12px;
+width:180px;
+padding:10px;
 font-size:16px;
 margin-top:15px;
 border-radius:6px;
 border:1px solid #ccc;
+text-align:center;
+letter-spacing:4px;
+display:block;
+margin-left:auto;
+margin-right:auto;
 }
 
+/* Buttons */
 button{
 padding:6px 8px;
 font-size:13px;
@@ -72,18 +80,23 @@ background:#0D47A1;
 .status{
 margin-top:10px;
 font-size:14px;
+color:#444;
 }
 
+/* Panels */
 #driverPanel{
+margin-top:10px;
 display:none;
 }
 
+/* Map */
 #driverMap{
 height:200px;
 border-radius:8px;
 margin-bottom:15px;
 }
 
+/* Demand rows */
 .block{
 display:flex;
 align-items:center;
@@ -93,19 +106,22 @@ padding:6px;
 border-radius:6px;
 background:#fafafa;
 border:1px solid #eee;
+gap:6px;
 }
 
 .location{
-width:120px;
+width:130px;
+text-align:left;
 font-size:13px;
 font-weight:bold;
 background:#E8F5E9;
-padding:4px;
+padding:4px 6px;
 border-radius:4px;
 }
 
 .count{
 font-weight:bold;
+font-size:16px;
 width:30px;
 text-align:center;
 background:#FFF3E0;
@@ -114,7 +130,7 @@ border-radius:4px;
 }
 
 .assigned{
-color:red;
+color:#D32F2F;
 font-size:12px;
 }
 
@@ -126,24 +142,37 @@ font-size:12px;
 
 <div class="container">
 
+<!-- LOGIN -->
 <div id="loginSection">
+
 <h2>Buggy Driver</h2>
-<input type="password" id="pinInput" placeholder="Enter Buggy PIN">
+
+<input type="password" id="pinInput" maxlength="4" placeholder="Enter PIN">
+
 <button onclick="authenticate()">Login</button>
+
 <p id="loginStatus" class="status"></p>
+
 </div>
 
+<!-- DASHBOARD -->
 <div id="driverPanel">
+
 <p id="status" class="status"></p>
+
 <div id="driverMap"></div>
+
 <h3>Waiting Passengers</h3>
+
 <div id="demandList"></div>
+
 </div>
 
 </div>
 
 <script>
 
+/* Firebase */
 const firebaseConfig={
 apiKey:"AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
 authDomain:"mobility-ca790.firebaseapp.com",
@@ -153,6 +182,7 @@ projectId:"mobility-ca790"
 
 firebase.initializeApp(firebaseConfig);
 
+/* PIN map */
 const pinBuggyMap={
 "1421":"buggy1","2632":"buggy2","3743":"buggy3",
 "4854":"buggy4","5965":"buggy5","6176":"buggy6",
@@ -161,28 +191,34 @@ const pinBuggyMap={
 
 let currentBuggy=null;
 
+/* 🚗 Car icon */
 const buggyIcon = L.icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
-iconSize:[38,38]
+iconSize:[38,38],
+iconAnchor:[19,19]
 });
 
+/* Stops */
 const blockLocations={
-ADMIN:[16.4645,80.5080],
-X_LAB:[16.4636,80.5071],
-SR_BLOCK_ENTRANCE:[16.4631,80.5067],
-STUDENT_COUNCIL:[16.4625,80.5069],
-CV_RAMAN:[16.4620,80.5063],
-GATE3:[16.4601,80.5070],
-GATE6:[16.4598,80.5049]
+ADMIN:[16.464509614468533,80.5080319038672],
+X_LAB:[16.463689824915953,80.5071930123218],
+SR_BLOCK_ENTRANCE:[16.463169807345757,80.50675283342075],
+STUDENT_COUNCIL:[16.462518253955295,80.50696973315311],
+CV_RAMAN:[16.462071648026914,80.50630946490254],
+GATE3:[16.460127985822375,80.507044551306],
+GATE6:[16.45986046805483,80.50498461479495]
 };
 
 let driverMap;
 let buggyMarkers={};
 
+/* LOGIN */
 function authenticate(){
+
 const pin=document.getElementById("pinInput").value;
 
 if(pinBuggyMap[pin]){
+
 currentBuggy=pinBuggyMap[pin];
 
 document.getElementById("loginSection").style.display="none";
@@ -196,91 +232,140 @@ listenBuggies();
 }else{
 document.getElementById("loginStatus").innerText="Invalid PIN";
 }
+
 }
 
+/* MAP */
 function initializeMap(){
+
 driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(driverMap);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(driverMap);
+
 }
 
+/* LOCATION SHARING (multi-login safe) */
 function startSharing(){
-navigator.geolocation.watchPosition(function(pos){
+
+navigator.geolocation.watchPosition(function(position){
+
 firebase.database().ref("drivers/"+currentBuggy).set({
-lat:pos.coords.latitude,
-lng:pos.coords.longitude,
-time:Date.now()
+lat:position.coords.latitude,
+lng:position.coords.longitude,
+time:Date.now(),
+updatedBy: currentBuggy + "_" + Math.random().toString(36).substring(2,6)
 });
+
 });
+
 }
 
+/* SHOW BUGGIES */
 function listenBuggies(){
+
 firebase.database().ref("drivers").on("value",function(snapshot){
 
 Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
 buggyMarkers={};
 
 snapshot.forEach(function(child){
-const d=child.val();
-if(!d) return;
 
-buggyMarkers[child.key]=L.marker([d.lat,d.lng],{icon:buggyIcon})
-.addTo(driverMap);
+const data=child.val();
+if(!data) return;
+
+buggyMarkers[child.key]=L.marker(
+[data.lat,data.lng],
+{icon:buggyIcon}
+)
+.addTo(driverMap)
+.bindPopup("<b>"+child.key+"</b>");
+
 });
+
 });
+
 }
 
+/* DEMAND */
 function listenDemand(){
+
 firebase.database().ref("requests").on("value",function(snapshot){
 
 let demandArray=[];
 let totalDemand=0;
 let assignedBuggy=null;
 
-Object.keys(blockLocations).forEach(b=>{
-demandArray.push({block:b,count:0,assignedTo:null});
+/* Init */
+Object.keys(blockLocations).forEach(function(block){
+demandArray.push({block:block,count:0,assignedTo:null});
 });
 
-snapshot.forEach(child=>{
+/* Update */
+snapshot.forEach(function(child){
+
+const block=child.key;
 const data=child.val()||{};
-const item=demandArray.find(x=>x.block===child.key);
+const count=data.count||0;
+const assignedTo=data.assignedTo||null;
+
+const item=demandArray.find(x=>x.block===block);
 
 if(item){
-item.count=data.count||0;
-item.assignedTo=data.assignedTo||null;
+item.count=count;
+item.assignedTo=assignedTo;
 }
 
-totalDemand+=data.count||0;
-if(data.assignedTo) assignedBuggy=data.assignedTo;
+totalDemand+=count;
+
+if(assignedTo){
+assignedBuggy=assignedTo;
+}
+
 });
 
+/* Sort */
 demandArray.sort((a,b)=>b.count-a.count);
 
+/* Dispatch */
 let allowMultiple=!assignedBuggy || totalDemand>5;
 
+/* UI */
 const container=document.getElementById("demandList");
 container.innerHTML="";
 
-demandArray.forEach(item=>{
+demandArray.forEach(function(item){
 
 const row=document.createElement("div");
 row.className="block";
 
-let action=`
+let action="";
+
+/* ✅ ALWAYS show controls */
+action+=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 <button onclick="setRemaining('${item.block}',6)">6</button>
 `;
 
+/* Claim logic */
 if(!item.assignedTo){
+
 if(allowMultiple){
 action+=`<button onclick="claim('${item.block}')">Claim</button>`;
 }else{
 action+=`<span class="assigned">Not required</span>`;
 }
-}else if(item.assignedTo!==currentBuggy){
-action+=`<span class="assigned">Assigned</span>`;
+
+}
+
+/* Assigned to other */
+else if(item.assignedTo!==currentBuggy){
+
+action+=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
+
 }
 
 row.innerHTML=`
@@ -290,22 +375,38 @@ ${action}
 `;
 
 container.appendChild(row);
-});
 
 });
+
+/* Status */
+if(!assignedBuggy){
+document.getElementById("status").innerText="🟢 No buggy assigned yet";
+}
+else if(!allowMultiple && currentBuggy!==assignedBuggy){
+document.getElementById("status").innerText="🚫 Only one buggy required";
+}
+else{
+document.getElementById("status").innerText="🟢 You can operate";
 }
 
+});
+
+}
+
+/* CLAIM */
 function claim(block){
 firebase.database().ref("requests/"+block+"/assignedTo").set(currentBuggy);
 }
 
+/* BOARDED (keeps assignment) */
 function boarded(block){
 firebase.database().ref("requests/"+block+"/count").set(0);
 }
 
-function setRemaining(block,val){
+/* REMAINING */
+function setRemaining(block,value){
 firebase.database().ref("requests/"+block).set({
-count:val,
+count:value,
 assignedTo:currentBuggy
 });
 }

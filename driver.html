@@ -42,7 +42,6 @@ margin-top:0;
 color:#1B5E20;
 }
 
-/* PIN input */
 input{
 width:180px;
 padding:10px;
@@ -55,7 +54,6 @@ letter-spacing:4px;
 margin:auto;
 }
 
-/* Buttons */
 button{
 padding:6px 8px;
 font-size:13px;
@@ -74,14 +72,12 @@ background:#0D47A1;
 margin-top:10px;
 }
 
-/* Map */
 #driverMap{
 height:200px;
 border-radius:8px;
 margin-bottom:15px;
 }
 
-/* Rows */
 .block{
 display:flex;
 align-items:center;
@@ -90,15 +86,15 @@ margin-top:10px;
 padding:6px;
 border-radius:6px;
 border:1px solid #eee;
+flex-wrap:wrap;
+gap:4px;
 }
 
-/* 🟢 Claimed by YOU */
 .claimed-self{
 background:#E8F5E9;
 border-left:4px solid #2E7D32;
 }
 
-/* 🔴 Claimed by others */
 .claimed-other{
 background:#FFEBEE;
 border-left:4px solid #C62828;
@@ -187,29 +183,54 @@ GATE6:[16.4598,80.5049]
 
 let driverMap, buggyMarkers={};
 
+/* 🔒 LOGIN WITH LOCK */
 function authenticate(){
+
 const pin=document.getElementById("pinInput").value;
 
-if(pinBuggyMap[pin]){
-currentBuggy=pinBuggyMap[pin];
+if(!pinBuggyMap[pin]){
+document.getElementById("loginStatus").innerText="Invalid PIN";
+return;
+}
 
-loginSection.style.display="none";
-driverPanel.style.display="block";
+const buggyId=pinBuggyMap[pin];
+const ref=firebase.database().ref("drivers/"+buggyId);
+
+ref.once("value").then(snapshot=>{
+
+const data=snapshot.val();
+
+if(data && data.time){
+const age=Date.now()-data.time;
+
+if(age<40000){
+document.getElementById("loginStatus").innerText=
+"⚠️ Buggy already active on another device";
+return;
+}
+}
+
+currentBuggy=buggyId;
+
+document.getElementById("loginSection").style.display="none";
+document.getElementById("driverPanel").style.display="block";
 
 initializeMap();
 startSharing();
 listenDemand();
 listenBuggies();
-}else{
-loginStatus.innerText="Invalid PIN";
-}
+
+});
+
 }
 
+/* MAP */
 function initializeMap(){
 driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(driverMap);
 }
 
+/* LOCATION */
 function startSharing(){
 navigator.geolocation.watchPosition(pos=>{
 firebase.database().ref("drivers/"+currentBuggy).set({
@@ -220,6 +241,7 @@ time:Date.now()
 });
 }
 
+/* SHOW BUGGIES */
 function listenBuggies(){
 firebase.database().ref("drivers").on("value",snap=>{
 Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
@@ -234,6 +256,7 @@ buggyMarkers[child.key]=L.marker([d.lat,d.lng],{icon:buggyIcon}).addTo(driverMap
 });
 }
 
+/* DEMAND */
 function listenDemand(){
 
 firebase.database().ref("requests").on("value",snap=>{
@@ -255,7 +278,7 @@ item.assignedTo=d.assignedTo||null;
 
 arr.sort((a,b)=>b.count-a.count);
 
-demandList.innerHTML="";
+document.getElementById("demandList").innerHTML="";
 
 arr.forEach(item=>{
 
@@ -272,15 +295,19 @@ else{
 row.className="block";
 }
 
+/* controls always visible */
 let action=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 <button onclick="setRemaining('${item.block}',6)">6</button>
-<button onclick="claim('${item.block}')">Claim</button>
 `;
 
-if(item.assignedTo && item.assignedTo!==currentBuggy){
+/* CLAIM LOGIC (safe) */
+if(!item.assignedTo){
+action+=`<button onclick="claim('${item.block}')">Claim</button>`;
+}
+else if(item.assignedTo!==currentBuggy){
 action+=`<span class="assigned">Assigned</span>`;
 }
 
@@ -290,7 +317,7 @@ row.innerHTML=`
 ${action}
 `;
 
-demandList.appendChild(row);
+document.getElementById("demandList").appendChild(row);
 
 });
 
@@ -298,13 +325,25 @@ demandList.appendChild(row);
 
 }
 
-/* safer claim */
+/* 🔒 SAFE CLAIM */
 function claim(block){
-firebase.database().ref("requests/"+block).transaction(data=>{
-if(!data) return {count:0,assignedTo:currentBuggy};
+
+firebase.database().ref("requests/"+block).transaction(function(data){
+
+if(data===null){
+return {count:0,assignedTo:currentBuggy};
+}
+
+if(data.assignedTo){
+return; // 🚫 block overwrite
+}
+
 data.assignedTo=currentBuggy;
+
 return data;
+
 });
+
 }
 
 function boarded(block){

@@ -133,102 +133,14 @@ updateMap();
 /* PASSENGER REQUEST SYSTEM */
 /* ===================================================== */
 
-const blocks = {
-
-CV_RAMAN:{name:"CV Raman",lat:16.4638,lng:80.5074},
-
-SR_BLOCK:{name:"SR Block",lat:16.4631,lng:80.5063},
-
-ADMIN:{name:"Admin",lat:16.4625,lng:80.5070},
-
-X_LAB:{name:"X Lab",lat:16.4636,lng:80.5059},
-
-JC_BOSE:{name:"JC Bose",lat:16.4642,lng:80.5068},
-
-GATE6:{name:"Gate 6 Parking",lat:16.4650,lng:80.5075}
-
-};
-
-const requestMarkers = {};
 const requestsRef = firebase.database().ref("requests");
 
+/* ❌ NO MAP MARKERS FOR REQUESTS */
 
-/* Icons for demand */
-
-const demandIcon = L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/252/252025.png",
-iconSize:[36,36],
-iconAnchor:[18,18]
-});
-
-const highestDemandIcon = L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
-iconSize:[42,42],
-iconAnchor:[21,21]
-});
-
-
-/* Demand listener */
+/* Just listen (optional, but no UI action needed) */
 
 requestsRef.on("value",function(snapshot){
-
-let highestDemand = 0;
-let highestBlock = null;
-
-
-/* Remove old markers */
-
-Object.keys(requestMarkers).forEach(function(block){
-
-map.removeLayer(requestMarkers[block]);
-delete requestMarkers[block];
-
-});
-
-
-snapshot.forEach(function(child){
-
-const block = child.key;
-const data = child.val();
-
-if(!blocks[block]) return;
-
-const count = data?.count || 0;
-const info = blocks[block];
-
-if(count <= 0) return;
-
-
-/* Track highest demand */
-
-if(count > highestDemand){
-highestDemand = count;
-highestBlock = block;
-}
-
-
-/* Create demand marker */
-
-requestMarkers[block] = L.marker(
-[info.lat,info.lng],
-{icon:demandIcon}
-).addTo(map)
-.bindPopup(
-"<b>"+info.name+"</b><br>"+
-"Waiting passengers: "+count
-);
-
-});
-
-
-/* Highlight highest demand location */
-
-if(highestBlock && requestMarkers[highestBlock]){
-
-requestMarkers[highestBlock].setIcon(highestDemandIcon);
-
-}
-
+/* intentionally empty */
 });
 
 
@@ -275,28 +187,5 @@ localStorage.setItem("lastBuggyRequest",Date.now());
 
 document.getElementById("requestStatus").innerText =
 "Request sent successfully. A buggy will arrive soon.";
-
-}
-
-
-/* ===================================================== */
-/* DRIVER BOARDED BUTTON */
-/* ===================================================== */
-
-function boarded(block){
-
-firebase.database()
-.ref("requests/"+block+"/count")
-.transaction(function(count){
-
-if(count === null) return 0;
-
-if(count > 0){
-return count - 1;
-}
-
-return 0;
-
-});
 
 }

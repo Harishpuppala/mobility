@@ -119,6 +119,11 @@ padding:4px;
 border-radius:4px;
 }
 
+.assigned{
+color:#D32F2F;
+font-size:12px;
+}
+
 </style>
 
 </head>
@@ -179,7 +184,6 @@ const pinBuggyMap={
 };
 
 let currentBuggy=null;
-let wakeLock=null;
 
 const blockLocations={
 CV_RAMAN:[16.4638,80.5074],
@@ -194,17 +198,6 @@ let driverMap;
 let buggyMarkers={};
 let demandMarkers={};
 
-window.addEventListener("beforeunload",function(e){
-e.preventDefault();
-e.returnValue="Location sharing will stop if you close this page.";
-});
-
-async function keepScreenAwake(){
-try{
-wakeLock=await navigator.wakeLock.request("screen");
-}catch(err){}
-}
-
 function authenticate(){
 
 const pin=document.getElementById("pinInput").value;
@@ -217,18 +210,12 @@ document.getElementById("loginSection").style.display="none";
 document.getElementById("driverPanel").style.display="block";
 
 initializeMap();
-
 startSharing();
-keepScreenAwake();
-
 listenDemand();
 listenBuggies();
 
-}
-else{
-
+}else{
 document.getElementById("loginStatus").innerText="Invalid PIN";
-
 }
 
 }
@@ -245,33 +232,14 @@ maxZoom:19
 
 function startSharing(){
 
-let lastUpdateTime=0;
-
 navigator.geolocation.watchPosition(function(position){
-
-const now=Date.now();
-
-if(now-lastUpdateTime<5000)return;
-
-lastUpdateTime=now;
 
 firebase.database().ref("drivers/"+currentBuggy).set({
 lat:position.coords.latitude,
 lng:position.coords.longitude,
-time:now
+time:Date.now()
 });
 
-document.getElementById("status").innerText="🟢 Location sharing active";
-
-},
-function(error){
-
-document.getElementById("status").innerText="Location error: "+error.message;
-
-},
-{
-enableHighAccuracy:true,
-maximumAge:3000
 });
 
 }
@@ -286,7 +254,6 @@ buggyMarkers={};
 snapshot.forEach(function(child){
 
 const data=child.val();
-
 if(!data) return;
 
 buggyMarkers[child.key]=L.marker([data.lat,data.lng])
@@ -299,41 +266,69 @@ buggyMarkers[child.key]=L.marker([data.lat,data.lng])
 
 }
 
+/* ================= MAIN LOGIC ================= */
+
 function listenDemand(){
 
 firebase.database().ref("requests").on("value",function(snapshot){
 
 let demandArray=[];
+let totalDemand=0;
+let assignedBuggy=null;
 
-/* initialize all blocks */
+/* Initialize all blocks */
 
 Object.keys(blockLocations).forEach(function(block){
 
 demandArray.push({
 block:block,
-count:0
+count:0,
+assignedTo:null
 });
 
 });
 
-/* update from firebase */
+/* Update from Firebase */
 
 snapshot.forEach(function(child){
 
 const block=child.key;
-const count=child.val().count||0;
+const data=child.val()||{};
+const count=data.count||0;
+const assignedTo=data.assignedTo||null;
 
 const item=demandArray.find(x=>x.block===block);
 
 if(item){
 item.count=count;
+item.assignedTo=assignedTo;
+}
+
+/* EXCLUDE ADMIN */
+
+if(block!=="ADMIN"){
+totalDemand+=count;
+}
+
+if(assignedTo){
+assignedBuggy=assignedTo;
 }
 
 });
 
-/* sort */
+/* SORT */
 
 demandArray.sort((a,b)=>b.count-a.count);
+
+/* RULE */
+
+let allowMultiple=true;
+
+if(assignedBuggy && totalDemand<=5){
+allowMultiple=false;
+}
+
+/* UI */
 
 const container=document.getElementById("demandList");
 container.innerHTML="";
@@ -346,16 +341,54 @@ demandArray.forEach(function(item){
 const row=document.createElement("div");
 row.className="block";
 
-row.innerHTML=`
-<span class="location">${item.block.replace("_"," ")}</span>
-<span class="count">${item.count}</span>
+let action="";
+
+/* CASE 1 */
+
+if(!item.assignedTo){
+
+if(allowMultiple || !assignedBuggy){
+
+action=`<button onclick="claim('${item.block}')">Claim</button>`;
+
+}else{
+
+action=`<span class="assigned">Not required</span>`;
+
+}
+
+}
+
+/* CASE 2 */
+
+else if(item.assignedTo===currentBuggy){
+
+action=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 <button onclick="setRemaining('${item.block}',6)">6</button>
 `;
 
+}
+
+/* CASE 3 */
+
+else{
+
+action=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
+
+}
+
+row.innerHTML=`
+<span class="location">${item.block.replace("_"," ")}</span>
+<span class="count">${item.count}</span>
+${action}
+`;
+
 container.appendChild(row);
+
+/* Map marker */
 
 if(item.count>0){
 
@@ -370,16 +403,62 @@ color:"red"
 
 });
 
+/* STATUS */
+
+if(!allowMultiple && currentBuggy!==assignedBuggy){
+
+document.getElementById("status").innerText=
+"🚫 Only one buggy required";
+
+}else{
+
+document.getElementById("status").innerText=
+"🟢 You can operate";
+
+}
+
 });
 
 }
 
-function boarded(block){
-firebase.database().ref("requests/"+block+"/count").set(0);
+/* CLAIM */
+
+function claim(block){
+
+firebase.database().ref("requests/"+block).transaction(function(data){
+
+if(data===null) return;
+
+if(!data.assignedTo){
+data.assignedTo=currentBuggy;
 }
 
+return data;
+
+});
+
+}
+
+/* BOARDED */
+
+function boarded(block){
+
+firebase.database().ref("requests/"+block).set({
+count:0,
+assignedTo:null
+});
+
+}
+
+/* REMAINING */
+
 function setRemaining(block,value){
-firebase.database().ref("requests/"+block+"/count").set(value);
+
+firebase.database().ref("requests/"+block).set({
+count:value,
+assignedTo:currentBuggy
+});
+
 }
 
 </script>

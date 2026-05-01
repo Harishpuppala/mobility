@@ -42,7 +42,6 @@ margin-top:0;
 color:#1B5E20;
 }
 
-/* PIN input */
 input{
 width:180px;
 padding:10px;
@@ -55,7 +54,6 @@ letter-spacing:4px;
 margin:auto;
 }
 
-/* Buttons */
 button{
 padding:6px 8px;
 font-size:13px;
@@ -75,14 +73,12 @@ background:#0D47A1;
 margin-top:10px;
 }
 
-/* Map */
 #driverMap{
 height:200px;
 border-radius:8px;
 margin-bottom:15px;
 }
 
-/* Demand rows */
 .block{
 display:flex;
 align-items:center;
@@ -96,13 +92,11 @@ gap:6px;
 background:#fafafa;
 }
 
-/* 🟢 Claimed by YOU */
 .claimed-self{
 background:#C8E6C9 !important;
 border:2px solid #2E7D32;
 }
 
-/* 🔴 Claimed by others */
 .claimed-other{
 background:#FFCDD2 !important;
 border:2px solid #C62828;
@@ -139,7 +133,6 @@ font-size:12px;
 
 <div class="container">
 
-<!-- LOGIN -->
 <div id="loginSection">
 <h2>Buggy Driver</h2>
 <input type="password" id="pinInput" maxlength="4" placeholder="Enter PIN">
@@ -147,7 +140,6 @@ font-size:12px;
 <p id="loginStatus" class="status"></p>
 </div>
 
-<!-- DASHBOARD -->
 <div id="driverPanel" style="display:none;">
 <p id="status" class="status"></p>
 <div id="driverMap"></div>
@@ -169,7 +161,7 @@ projectId:"mobility-ca790"
 
 firebase.initializeApp(firebaseConfig);
 
-/* PIN mapping */
+/* PIN map */
 const pinBuggyMap={
 "1421":"buggy1","2632":"buggy2","3743":"buggy3",
 "4854":"buggy4","5965":"buggy5","6176":"buggy6",
@@ -178,13 +170,11 @@ const pinBuggyMap={
 
 let currentBuggy=null;
 
-/* Car icon */
 const buggyIcon=L.icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
 iconSize:[38,38]
 });
 
-/* Stops */
 const blockLocations={
 ADMIN:[16.4645,80.5080],
 X_LAB:[16.4636,80.5071],
@@ -197,7 +187,7 @@ GATE6:[16.4598,80.5049]
 
 let driverMap, buggyMarkers={};
 
-/* 🔒 LOGIN WITH LOCK */
+/* LOGIN */
 function authenticate(){
 
 const pin=document.getElementById("pinInput").value;
@@ -243,7 +233,7 @@ driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(driverMap);
 }
 
-/* LOCATION SHARING */
+/* LOCATION */
 function startSharing(){
 navigator.geolocation.watchPosition(pos=>{
 firebase.database().ref("drivers/"+currentBuggy).set({
@@ -254,7 +244,7 @@ time:Date.now()
 });
 }
 
-/* SHOW BUGGIES */
+/* BUGGIES */
 function listenBuggies(){
 firebase.database().ref("drivers").on("value",snap=>{
 Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
@@ -269,7 +259,7 @@ buggyMarkers[child.key]=L.marker([d.lat,d.lng],{icon:buggyIcon}).addTo(driverMap
 });
 }
 
-/* DEMAND SYSTEM */
+/* DEMAND */
 function listenDemand(){
 
 firebase.database().ref("requests").on("value",snap=>{
@@ -297,7 +287,6 @@ arr.forEach(item=>{
 
 const row=document.createElement("div");
 
-/* Highlight */
 if(item.assignedTo===currentBuggy){
 row.className="block claimed-self";
 }
@@ -308,14 +297,12 @@ else{
 row.className="block";
 }
 
-/* Controls */
 let action=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 `;
 
-/* Claim */
 if(!item.assignedTo){
 action+=`<button onclick="claim('${item.block}')">Claim</button>`;
 }
@@ -336,9 +323,29 @@ document.getElementById("demandList").appendChild(row);
 });
 }
 
-/* 🔒 SAFE CLAIM */
+/* 🔒 CLAIM WITH SINGLE-ACTIVE RULE */
 function claim(block){
 
+const ref = firebase.database().ref("requests");
+
+ref.once("value").then(snapshot=>{
+
+let active=false;
+
+snapshot.forEach(child=>{
+let d=child.val();
+if(d && d.assignedTo===currentBuggy && d.count>0){
+active=true;
+}
+});
+
+if(active){
+document.getElementById("status").innerText =
+"⚠️ Finish current trip before claiming another";
+return;
+}
+
+/* safe claim */
 firebase.database().ref("requests/"+block).transaction(function(data){
 
 if(data===null){
@@ -346,12 +353,13 @@ return {count:0,assignedTo:currentBuggy};
 }
 
 if(data.assignedTo){
-return; // prevent overwrite
+return;
 }
 
 data.assignedTo=currentBuggy;
-
 return data;
+
+});
 
 });
 }

@@ -1,89 +1,286 @@
-<!-- ONLY listenDemand() + boarded() are updated -->
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Buggy Driver</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:#f2f5f7;
+display:flex;
+justify-content:center;
+align-items:flex-start;
+min-height:100vh;
+padding-top:30px;
+}
+
+.container{
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.15);
+width:420px;
+text-align:center;
+max-height:92vh;
+overflow-y:auto;
+}
+
+h2{
+margin-top:0;
+color:#1B5E20;
+}
+
+input{
+width:100%;
+padding:12px;
+font-size:16px;
+margin-top:15px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+padding:6px 8px;
+font-size:13px;
+background:#1B5E20;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#145A1A;
+}
+
+.boarded{
+background:#0D47A1;
+}
+
+.status{
+margin-top:10px;
+font-size:14px;
+}
+
+#driverPanel{
+display:none;
+}
+
+#driverMap{
+height:200px;
+border-radius:8px;
+margin-bottom:15px;
+}
+
+.block{
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-top:10px;
+padding:6px;
+border-radius:6px;
+background:#fafafa;
+border:1px solid #eee;
+}
+
+.location{
+width:120px;
+font-size:13px;
+font-weight:bold;
+background:#E8F5E9;
+padding:4px;
+border-radius:4px;
+}
+
+.count{
+font-weight:bold;
+width:30px;
+text-align:center;
+background:#FFF3E0;
+padding:4px;
+border-radius:4px;
+}
+
+.assigned{
+color:red;
+font-size:12px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div id="loginSection">
+<h2>Buggy Driver</h2>
+<input type="password" id="pinInput" placeholder="Enter Buggy PIN">
+<button onclick="authenticate()">Login</button>
+<p id="loginStatus" class="status"></p>
+</div>
+
+<div id="driverPanel">
+<p id="status" class="status"></p>
+<div id="driverMap"></div>
+<h3>Waiting Passengers</h3>
+<div id="demandList"></div>
+</div>
+
+</div>
 
 <script>
 
-function listenDemand(){
+const firebaseConfig={
+apiKey:"AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
+authDomain:"mobility-ca790.firebaseapp.com",
+databaseURL:"https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId:"mobility-ca790"
+};
 
+firebase.initializeApp(firebaseConfig);
+
+const pinBuggyMap={
+"1421":"buggy1","2632":"buggy2","3743":"buggy3",
+"4854":"buggy4","5965":"buggy5","6176":"buggy6",
+"7287":"buggy7","8398":"buggy8"
+};
+
+let currentBuggy=null;
+
+const buggyIcon = L.icon({
+iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+iconSize:[38,38]
+});
+
+const blockLocations={
+ADMIN:[16.4645,80.5080],
+X_LAB:[16.4636,80.5071],
+SR_BLOCK_ENTRANCE:[16.4631,80.5067],
+STUDENT_COUNCIL:[16.4625,80.5069],
+CV_RAMAN:[16.4620,80.5063],
+GATE3:[16.4601,80.5070],
+GATE6:[16.4598,80.5049]
+};
+
+let driverMap;
+let buggyMarkers={};
+
+function authenticate(){
+const pin=document.getElementById("pinInput").value;
+
+if(pinBuggyMap[pin]){
+currentBuggy=pinBuggyMap[pin];
+
+document.getElementById("loginSection").style.display="none";
+document.getElementById("driverPanel").style.display="block";
+
+initializeMap();
+startSharing();
+listenDemand();
+listenBuggies();
+
+}else{
+document.getElementById("loginStatus").innerText="Invalid PIN";
+}
+}
+
+function initializeMap(){
+driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(driverMap);
+}
+
+function startSharing(){
+navigator.geolocation.watchPosition(function(pos){
+firebase.database().ref("drivers/"+currentBuggy).set({
+lat:pos.coords.latitude,
+lng:pos.coords.longitude,
+time:Date.now()
+});
+});
+}
+
+function listenBuggies(){
+firebase.database().ref("drivers").on("value",function(snapshot){
+
+Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
+buggyMarkers={};
+
+snapshot.forEach(function(child){
+const d=child.val();
+if(!d) return;
+
+buggyMarkers[child.key]=L.marker([d.lat,d.lng],{icon:buggyIcon})
+.addTo(driverMap);
+});
+});
+}
+
+function listenDemand(){
 firebase.database().ref("requests").on("value",function(snapshot){
 
 let demandArray=[];
 let totalDemand=0;
 let assignedBuggy=null;
 
-Object.keys(blockLocations).forEach(function(block){
-demandArray.push({block:block,count:0,assignedTo:null});
+Object.keys(blockLocations).forEach(b=>{
+demandArray.push({block:b,count:0,assignedTo:null});
 });
 
-snapshot.forEach(function(child){
-
-const block=child.key;
+snapshot.forEach(child=>{
 const data=child.val()||{};
-const count=data.count||0;
-const assignedTo=data.assignedTo||null;
-
-const item=demandArray.find(x=>x.block===block);
+const item=demandArray.find(x=>x.block===child.key);
 
 if(item){
-item.count=count;
-item.assignedTo=assignedTo;
+item.count=data.count||0;
+item.assignedTo=data.assignedTo||null;
 }
 
-totalDemand+=count;
-
-if(assignedTo){
-assignedBuggy=assignedTo;
-}
-
+totalDemand+=data.count||0;
+if(data.assignedTo) assignedBuggy=data.assignedTo;
 });
 
 demandArray.sort((a,b)=>b.count-a.count);
 
-let allowMultiple=true;
-
-if(!assignedBuggy){
-allowMultiple=true;
-}
-else if(totalDemand<=5){
-allowMultiple=false;
-}
+let allowMultiple=!assignedBuggy || totalDemand>5;
 
 const container=document.getElementById("demandList");
 container.innerHTML="";
 
-demandArray.forEach(function(item){
+demandArray.forEach(item=>{
 
 const row=document.createElement("div");
 row.className="block";
 
-let action="";
-
-/* ✅ ALWAYS SHOW BOARDING OPTIONS */
-
-action+=`
+let action=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 <button onclick="setRemaining('${item.block}',6)">6</button>
 `;
 
-/* CLAIM */
-
 if(!item.assignedTo){
-
-if(allowMultiple || !assignedBuggy){
+if(allowMultiple){
 action+=`<button onclick="claim('${item.block}')">Claim</button>`;
 }else{
 action+=`<span class="assigned">Not required</span>`;
 }
-
-}
-
-/* ASSIGNED TO OTHER */
-
-else if(item.assignedTo!==currentBuggy){
-
-action+=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
-
+}else if(item.assignedTo!==currentBuggy){
+action+=`<span class="assigned">Assigned</span>`;
 }
 
 row.innerHTML=`
@@ -93,31 +290,27 @@ ${action}
 `;
 
 container.appendChild(row);
-
 });
 
-/* STATUS */
-
-if(!assignedBuggy){
-document.getElementById("status").innerText="🟢 No buggy assigned yet";
-}
-else if(!allowMultiple && currentBuggy!==assignedBuggy){
-document.getElementById("status").innerText="🚫 Only one buggy required";
-}
-else{
-document.getElementById("status").innerText="🟢 You can operate";
-}
-
 });
-
 }
 
-/* ✅ UPDATED BOARDED (DO NOT RESET ASSIGNMENT) */
+function claim(block){
+firebase.database().ref("requests/"+block+"/assignedTo").set(currentBuggy);
+}
 
 function boarded(block){
-
 firebase.database().ref("requests/"+block+"/count").set(0);
+}
 
+function setRemaining(block,val){
+firebase.database().ref("requests/"+block).set({
+count:val,
+assignedTo:currentBuggy
+});
 }
 
 </script>
+
+</body>
+</html>

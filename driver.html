@@ -1,294 +1,6 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<title>Buggy Driver</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial, Helvetica, sans-serif;
-background:#f2f5f7;
-display:flex;
-justify-content:center;
-align-items:flex-start;
-min-height:100vh;
-padding-top:30px;
-}
-
-.container{
-background:white;
-padding:25px;
-border-radius:10px;
-box-shadow:0 4px 12px rgba(0,0,0,0.15);
-width:420px;
-text-align:center;
-max-height:92vh;
-overflow-y:auto;
-}
-
-h2{
-margin-top:0;
-color:#1B5E20;
-}
-
-input{
-width:100%;
-padding:12px;
-font-size:16px;
-margin-top:15px;
-border-radius:6px;
-border:1px solid #ccc;
-box-sizing:border-box;
-}
-
-button{
-padding:6px 8px;
-font-size:13px;
-background:#1B5E20;
-color:white;
-border:none;
-border-radius:6px;
-cursor:pointer;
-}
-
-button:hover{
-background:#145A1A;
-}
-
-.boarded{
-background:#0D47A1;
-}
-
-.status{
-margin-top:10px;
-font-size:14px;
-color:#444;
-}
-
-#driverPanel{
-margin-top:10px;
-display:none;
-}
-
-#driverMap{
-height:200px;
-border-radius:8px;
-margin-bottom:15px;
-}
-
-.block{
-display:flex;
-align-items:center;
-justify-content:space-between;
-margin-top:10px;
-padding:6px;
-border-radius:6px;
-background:#fafafa;
-border:1px solid #eee;
-gap:6px;
-}
-
-.location{
-width:130px;
-text-align:left;
-font-size:13px;
-font-weight:bold;
-background:#E8F5E9;
-padding:4px 6px;
-border-radius:4px;
-}
-
-.count{
-font-weight:bold;
-font-size:16px;
-width:30px;
-text-align:center;
-background:#FFF3E0;
-padding:4px;
-border-radius:4px;
-}
-
-.assigned{
-color:#D32F2F;
-font-size:12px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="container">
-
-<div id="loginSection">
-
-<h2>Buggy Driver</h2>
-
-<input type="password" id="pinInput" placeholder="Enter Buggy PIN">
-
-<button onclick="authenticate()">Login</button>
-
-<p id="loginStatus" class="status"></p>
-
-</div>
-
-<div id="driverPanel">
-
-<p id="status" class="status"></p>
-
-<div id="driverMap"></div>
-
-<h3>Waiting Passengers</h3>
-
-<div id="demandList"></div>
-
-</div>
-
-</div>
+<!-- ONLY listenDemand() + boarded() are updated -->
 
 <script>
-
-const firebaseConfig={
-apiKey:"AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
-authDomain:"mobility-ca790.firebaseapp.com",
-databaseURL:"https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId:"mobility-ca790",
-storageBucket:"mobility-ca790.firebasestorage.app",
-messagingSenderId:"832491995447",
-appId:"1:832491995447:web:9f5de3b844e3119f79ab2"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const pinBuggyMap={
-"1421":"buggy1",
-"2632":"buggy2",
-"3743":"buggy3",
-"4854":"buggy4",
-"5965":"buggy5",
-"6176":"buggy6",
-"7287":"buggy7",
-"8398":"buggy8"
-};
-
-let currentBuggy=null;
-
-/* 🚗 Car Icon */
-
-const buggyIcon = L.icon({
-iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
-iconSize: [38,38],
-iconAnchor: [19,19]
-});
-
-/* STOPS */
-
-const blockLocations={
-ADMIN:[16.464509614468533,80.5080319038672],
-X_LAB:[16.463689824915953,80.5071930123218],
-SR_BLOCK_ENTRANCE:[16.463169807345757,80.50675283342075],
-STUDENT_COUNCIL:[16.462518253955295,80.50696973315311],
-CV_RAMAN:[16.462071648026914,80.50630946490254],
-GATE3:[16.460127985822375,80.507044551306],
-GATE6:[16.45986046805483,80.50498461479495]
-};
-
-let driverMap;
-let buggyMarkers={};
-
-/* LOGIN */
-
-function authenticate(){
-
-const pin=document.getElementById("pinInput").value;
-
-if(pinBuggyMap[pin]){
-
-currentBuggy=pinBuggyMap[pin];
-
-document.getElementById("loginSection").style.display="none";
-document.getElementById("driverPanel").style.display="block";
-
-initializeMap();
-startSharing();
-listenDemand();
-listenBuggies();
-
-}else{
-document.getElementById("loginStatus").innerText="Invalid PIN";
-}
-
-}
-
-/* MAP */
-
-function initializeMap(){
-
-driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:19
-}).addTo(driverMap);
-
-}
-
-/* ✅ UPDATED LOCATION SHARING (MULTI-LOGIN SAFE) */
-
-function startSharing(){
-
-navigator.geolocation.watchPosition(function(position){
-
-firebase.database().ref("drivers/"+currentBuggy).set({
-lat:position.coords.latitude,
-lng:position.coords.longitude,
-time:Date.now(),
-updatedBy: currentBuggy + "_" + Math.random().toString(36).substring(2,6)
-});
-
-});
-
-}
-
-/* SHOW BUGGIES */
-
-function listenBuggies(){
-
-firebase.database().ref("drivers").on("value",function(snapshot){
-
-Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
-buggyMarkers={};
-
-snapshot.forEach(function(child){
-
-const data=child.val();
-if(!data) return;
-
-buggyMarkers[child.key]=L.marker(
-[data.lat,data.lng],
-{icon:buggyIcon}
-)
-.addTo(driverMap)
-.bindPopup("<b>"+child.key+"</b>");
-
-});
-
-});
-
-}
-
-/* DEMAND LOGIC (unchanged) */
 
 function listenDemand(){
 
@@ -345,24 +57,33 @@ row.className="block";
 
 let action="";
 
-if(item.count>0){
+/* ✅ ALWAYS SHOW BOARDING OPTIONS */
+
 action+=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 <button onclick="setRemaining('${item.block}',6)">6</button>
 `;
-}
+
+/* CLAIM */
 
 if(!item.assignedTo){
+
 if(allowMultiple || !assignedBuggy){
 action+=`<button onclick="claim('${item.block}')">Claim</button>`;
 }else{
 action+=`<span class="assigned">Not required</span>`;
 }
+
 }
+
+/* ASSIGNED TO OTHER */
+
 else if(item.assignedTo!==currentBuggy){
+
 action+=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
+
 }
 
 row.innerHTML=`
@@ -374,6 +95,8 @@ ${action}
 container.appendChild(row);
 
 });
+
+/* STATUS */
 
 if(!assignedBuggy){
 document.getElementById("status").innerText="🟢 No buggy assigned yet";
@@ -389,37 +112,12 @@ document.getElementById("status").innerText="🟢 You can operate";
 
 }
 
-/* CLAIM */
-
-function claim(block){
-firebase.database().ref("requests/"+block).transaction(function(data){
-if(data===null) return;
-if(!data.assignedTo){
-data.assignedTo=currentBuggy;
-}
-return data;
-});
-}
-
-/* BOARDED */
+/* ✅ UPDATED BOARDED (DO NOT RESET ASSIGNMENT) */
 
 function boarded(block){
-firebase.database().ref("requests/"+block).set({
-count:0,
-assignedTo:null
-});
-}
 
-/* REMAINING */
+firebase.database().ref("requests/"+block+"/count").set(0);
 
-function setRemaining(block,value){
-firebase.database().ref("requests/"+block).set({
-count:value,
-assignedTo:currentBuggy
-});
 }
 
 </script>
-
-</body>
-</html>

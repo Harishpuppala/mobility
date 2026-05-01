@@ -186,24 +186,23 @@ const pinBuggyMap={
 let currentBuggy=null;
 
 /* 🚗 Car Icon */
+
 const buggyIcon = L.icon({
 iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
 iconSize: [38,38],
 iconAnchor: [19,19]
 });
 
-/* UPDATED STOPS */
+/* STOPS */
 
 const blockLocations={
-
-ADMIN:[16.464509614468533, 80.5080319038672],
-X_LAB:[16.463689824915953, 80.5071930123218],
-SR_BLOCK_ENTRANCE:[16.463169807345757, 80.50675283342075],
-STUDENT_COUNCIL:[16.462518253955295, 80.50696973315311],
-CV_RAMAN:[16.462071648026914, 80.50630946490254],
-GATE3:[16.460127985822375, 80.507044551306],
-GATE6:[16.45986046805483, 80.50498461479495]
-
+ADMIN:[16.464509614468533,80.5080319038672],
+X_LAB:[16.463689824915953,80.5071930123218],
+SR_BLOCK_ENTRANCE:[16.463169807345757,80.50675283342075],
+STUDENT_COUNCIL:[16.462518253955295,80.50696973315311],
+CV_RAMAN:[16.462071648026914,80.50630946490254],
+GATE3:[16.460127985822375,80.507044551306],
+GATE6:[16.45986046805483,80.50498461479495]
 };
 
 let driverMap;
@@ -245,7 +244,7 @@ maxZoom:19
 
 }
 
-/* LOCATION SHARING */
+/* ✅ UPDATED LOCATION SHARING (MULTI-LOGIN SAFE) */
 
 function startSharing(){
 
@@ -254,14 +253,15 @@ navigator.geolocation.watchPosition(function(position){
 firebase.database().ref("drivers/"+currentBuggy).set({
 lat:position.coords.latitude,
 lng:position.coords.longitude,
-time:Date.now()
+time:Date.now(),
+updatedBy: currentBuggy + "_" + Math.random().toString(36).substring(2,6)
 });
 
 });
 
 }
 
-/* 🚗 SHOW BUGGIES WITH CAR ICON */
+/* SHOW BUGGIES */
 
 function listenBuggies(){
 
@@ -277,7 +277,7 @@ if(!data) return;
 
 buggyMarkers[child.key]=L.marker(
 [data.lat,data.lng],
-{icon: buggyIcon}
+{icon:buggyIcon}
 )
 .addTo(driverMap)
 .bindPopup("<b>"+child.key+"</b>");
@@ -288,7 +288,7 @@ buggyMarkers[child.key]=L.marker(
 
 }
 
-/* MAIN LOGIC (unchanged) */
+/* DEMAND LOGIC (unchanged) */
 
 function listenDemand(){
 
@@ -389,6 +389,8 @@ document.getElementById("status").innerText="🟢 You can operate";
 
 }
 
+/* CLAIM */
+
 function claim(block){
 firebase.database().ref("requests/"+block).transaction(function(data){
 if(data===null) return;
@@ -399,12 +401,16 @@ return data;
 });
 }
 
+/* BOARDED */
+
 function boarded(block){
 firebase.database().ref("requests/"+block).set({
 count:0,
 assignedTo:null
 });
 }
+
+/* REMAINING */
 
 function setRemaining(block,value){
 firebase.database().ref("requests/"+block).set({

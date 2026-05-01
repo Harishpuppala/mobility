@@ -185,6 +185,13 @@ const pinBuggyMap={
 
 let currentBuggy=null;
 
+/* 🚗 Car Icon */
+const buggyIcon = L.icon({
+iconUrl: "https://cdn-icons-png.flaticon.com/512/744/744465.png",
+iconSize: [38,38],
+iconAnchor: [19,19]
+});
+
 /* UPDATED STOPS */
 
 const blockLocations={
@@ -254,7 +261,7 @@ time:Date.now()
 
 }
 
-/* SHOW BUGGIES */
+/* 🚗 SHOW BUGGIES WITH CAR ICON */
 
 function listenBuggies(){
 
@@ -268,9 +275,12 @@ snapshot.forEach(function(child){
 const data=child.val();
 if(!data) return;
 
-buggyMarkers[child.key]=L.marker([data.lat,data.lng])
+buggyMarkers[child.key]=L.marker(
+[data.lat,data.lng],
+{icon: buggyIcon}
+)
 .addTo(driverMap)
-.bindPopup(child.key);
+.bindPopup("<b>"+child.key+"</b>");
 
 });
 
@@ -278,7 +288,7 @@ buggyMarkers[child.key]=L.marker([data.lat,data.lng])
 
 }
 
-/* MAIN LOGIC */
+/* MAIN LOGIC (unchanged) */
 
 function listenDemand(){
 
@@ -288,19 +298,9 @@ let demandArray=[];
 let totalDemand=0;
 let assignedBuggy=null;
 
-/* Initialize */
-
 Object.keys(blockLocations).forEach(function(block){
-
-demandArray.push({
-block:block,
-count:0,
-assignedTo:null
+demandArray.push({block:block,count:0,assignedTo:null});
 });
-
-});
-
-/* Update */
 
 snapshot.forEach(function(child){
 
@@ -316,7 +316,7 @@ item.count=count;
 item.assignedTo=assignedTo;
 }
 
-totalDemand += count;
+totalDemand+=count;
 
 if(assignedTo){
 assignedBuggy=assignedTo;
@@ -324,11 +324,7 @@ assignedBuggy=assignedTo;
 
 });
 
-/* SORT */
-
 demandArray.sort((a,b)=>b.count-a.count);
-
-/* DISPATCH */
 
 let allowMultiple=true;
 
@@ -338,8 +334,6 @@ allowMultiple=true;
 else if(totalDemand<=5){
 allowMultiple=false;
 }
-
-/* UI */
 
 const container=document.getElementById("demandList");
 container.innerHTML="";
@@ -351,37 +345,24 @@ row.className="block";
 
 let action="";
 
-/* BOARDING ALWAYS */
-
-if(item.count > 0){
-
-action += `
+if(item.count>0){
+action+=`
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
 <button onclick="setRemaining('${item.block}',6)">6</button>
 `;
-
 }
-
-/* CLAIM */
 
 if(!item.assignedTo){
-
 if(allowMultiple || !assignedBuggy){
-action += `<button onclick="claim('${item.block}')">Claim</button>`;
+action+=`<button onclick="claim('${item.block}')">Claim</button>`;
 }else{
-action += `<span class="assigned">Not required</span>`;
+action+=`<span class="assigned">Not required</span>`;
 }
-
 }
-
-/* ASSIGNED */
-
-else if(item.assignedTo !== currentBuggy){
-
-action += `<span class="assigned">Assigned to ${item.assignedTo}</span>`;
-
+else if(item.assignedTo!==currentBuggy){
+action+=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
 }
 
 row.innerHTML=`
@@ -393,8 +374,6 @@ ${action}
 container.appendChild(row);
 
 });
-
-/* STATUS */
 
 if(!assignedBuggy){
 document.getElementById("status").innerText="🟢 No buggy assigned yet";
@@ -410,48 +389,31 @@ document.getElementById("status").innerText="🟢 You can operate";
 
 }
 
-/* CLAIM */
-
 function claim(block){
-
 firebase.database().ref("requests/"+block).transaction(function(data){
-
 if(data===null) return;
-
 if(!data.assignedTo){
 data.assignedTo=currentBuggy;
 }
-
 return data;
-
 });
-
 }
 
-/* BOARDED */
-
 function boarded(block){
-
 firebase.database().ref("requests/"+block).set({
 count:0,
 assignedTo:null
 });
-
 }
 
-/* REMAINING */
-
 function setRemaining(block,value){
-
 firebase.database().ref("requests/"+block).set({
 count:value,
 assignedTo:currentBuggy
 });
-
 }
 
 </script>
 
 </body>
-
 </html>

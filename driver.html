@@ -346,18 +346,11 @@ row.className="block";
 
 let action="";
 
-if(!item.assignedTo){
+/* ALWAYS allow boarding */
 
-if(allowMultiple || !assignedBuggy){
-action=`<button onclick="claim('${item.block}')">Claim</button>`;
-}else{
-action=`<span class="assigned">Not required</span>`;
-}
+if(item.count > 0){
 
-}
-else if(item.assignedTo===currentBuggy){
-
-action=`
+action += `
 <button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
 <button onclick="setRemaining('${item.block}',2)">2</button>
 <button onclick="setRemaining('${item.block}',4)">4</button>
@@ -365,9 +358,24 @@ action=`
 `;
 
 }
-else{
 
-action=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
+/* CLAIM */
+
+if(!item.assignedTo){
+
+if(allowMultiple || !assignedBuggy){
+action += `<button onclick="claim('${item.block}')">Claim</button>`;
+}else{
+action += `<span class="assigned">Not required</span>`;
+}
+
+}
+
+/* SHOW assignment */
+
+else if(item.assignedTo !== currentBuggy){
+
+action += `<span class="assigned">Assigned to ${item.assignedTo}</span>`;
 
 }
 

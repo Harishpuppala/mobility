@@ -66,14 +66,16 @@ Centre for Geospatial Technology
 
 <div class="requestGrid">
 
-<button class="reqBtn" onclick="sendRequest('CV_RAMAN')">CV Raman</button>
-<button class="reqBtn" onclick="sendRequest('SR_BLOCK')">SR Block</button>
-
 <button class="reqBtn" onclick="sendRequest('ADMIN')">Admin</button>
 <button class="reqBtn" onclick="sendRequest('X_LAB')">X Lab</button>
 
-<button class="reqBtn" onclick="sendRequest('JC_BOSE')">JC Bose</button>
-<button class="reqBtn" onclick="sendRequest('GATE6')">Gate 6 Parking</button>
+<button class="reqBtn" onclick="sendRequest('SR_BLOCK_ENTRANCE')">SR Block Entrance</button>
+<button class="reqBtn" onclick="sendRequest('STUDENT_COUNCIL')">Student Council</button>
+
+<button class="reqBtn" onclick="sendRequest('CV_RAMAN')">CV Raman</button>
+<button class="reqBtn" onclick="sendRequest('GATE3')">Gate 3</button>
+
+<button class="reqBtn" onclick="sendRequest('GATE6')">Gate 6</button>
 
 </div>
 
@@ -113,7 +115,7 @@ const diff = Date.now() - lastTime;
 if(diff < 600000){
 
 document.getElementById("requestStatus").innerText =
-"You already requested a buggy at " + lastRequest +
+"You already requested a buggy at " + lastRequest.replaceAll("_"," ") +
 ". Please wait a few minutes.";
 
 return;
@@ -141,7 +143,7 @@ btn.style.opacity = 0.5;
 });
 
 document.getElementById("requestStatus").innerText =
-"Request sent from " + block.replace("_"," ") +
+"Request sent from " + block.replaceAll("_"," ") +
 ". Please wait for the buggy.";
 
 }

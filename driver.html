@@ -1,6 +1,279 @@
-<!-- ONLY the listenDemand() function is updated -->
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Buggy Driver</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:#f2f5f7;
+display:flex;
+justify-content:center;
+align-items:flex-start;
+min-height:100vh;
+padding-top:30px;
+}
+
+.container{
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.15);
+width:420px;
+text-align:center;
+max-height:92vh;
+overflow-y:auto;
+}
+
+h2{
+margin-top:0;
+color:#1B5E20;
+}
+
+input{
+width:100%;
+padding:12px;
+font-size:16px;
+margin-top:15px;
+border-radius:6px;
+border:1px solid #ccc;
+box-sizing:border-box;
+}
+
+button{
+padding:6px 8px;
+font-size:13px;
+background:#1B5E20;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#145A1A;
+}
+
+.boarded{
+background:#0D47A1;
+}
+
+.status{
+margin-top:10px;
+font-size:14px;
+color:#444;
+}
+
+#driverPanel{
+margin-top:10px;
+display:none;
+}
+
+#driverMap{
+height:200px;
+border-radius:8px;
+margin-bottom:15px;
+}
+
+.block{
+display:flex;
+align-items:center;
+justify-content:space-between;
+margin-top:10px;
+padding:6px;
+border-radius:6px;
+background:#fafafa;
+border:1px solid #eee;
+gap:6px;
+}
+
+.location{
+width:120px;
+text-align:left;
+font-size:14px;
+font-weight:bold;
+background:#E8F5E9;
+padding:4px 6px;
+border-radius:4px;
+}
+
+.count{
+font-weight:bold;
+font-size:16px;
+width:30px;
+text-align:center;
+background:#FFF3E0;
+padding:4px;
+border-radius:4px;
+}
+
+.assigned{
+color:#D32F2F;
+font-size:12px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div id="loginSection">
+
+<h2>Buggy Driver</h2>
+
+<input type="password" id="pinInput" placeholder="Enter Buggy PIN">
+
+<button onclick="authenticate()">Login</button>
+
+<p id="loginStatus" class="status"></p>
+
+</div>
+
+<div id="driverPanel">
+
+<p id="status" class="status"></p>
+
+<div id="driverMap"></div>
+
+<h3>Waiting Passengers</h3>
+
+<div id="demandList"></div>
+
+</div>
+
+</div>
 
 <script>
+
+const firebaseConfig={
+apiKey:"AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
+authDomain:"mobility-ca790.firebaseapp.com",
+databaseURL:"https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId:"mobility-ca790",
+storageBucket:"mobility-ca790.firebasestorage.app",
+messagingSenderId:"832491995447",
+appId:"1:832491995447:web:9f5de3b844e3119f79ab2"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const pinBuggyMap={
+"1421":"buggy1",
+"2632":"buggy2",
+"3743":"buggy3",
+"4854":"buggy4",
+"5965":"buggy5",
+"6176":"buggy6",
+"7287":"buggy7",
+"8398":"buggy8"
+};
+
+let currentBuggy=null;
+
+const blockLocations={
+CV_RAMAN:[16.4638,80.5074],
+SR_BLOCK:[16.4631,80.5063],
+ADMIN:[16.4625,80.5070],
+X_LAB:[16.4636,80.5059],
+JC_BOSE:[16.4642,80.5068],
+GATE6:[16.4650,80.5075]
+};
+
+let driverMap;
+let buggyMarkers={};
+
+/* LOGIN */
+
+function authenticate(){
+
+const pin=document.getElementById("pinInput").value;
+
+if(pinBuggyMap[pin]){
+
+currentBuggy=pinBuggyMap[pin];
+
+document.getElementById("loginSection").style.display="none";
+document.getElementById("driverPanel").style.display="block";
+
+initializeMap();
+startSharing();
+listenDemand();
+listenBuggies();
+
+}else{
+document.getElementById("loginStatus").innerText="Invalid PIN";
+}
+
+}
+
+/* MAP */
+
+function initializeMap(){
+
+driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:19
+}).addTo(driverMap);
+
+}
+
+/* LOCATION SHARING */
+
+function startSharing(){
+
+navigator.geolocation.watchPosition(function(position){
+
+firebase.database().ref("drivers/"+currentBuggy).set({
+lat:position.coords.latitude,
+lng:position.coords.longitude,
+time:Date.now()
+});
+
+});
+
+}
+
+/* SHOW BUGGIES */
+
+function listenBuggies(){
+
+firebase.database().ref("drivers").on("value",function(snapshot){
+
+Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
+buggyMarkers={};
+
+snapshot.forEach(function(child){
+
+const data=child.val();
+if(!data) return;
+
+buggyMarkers[child.key]=L.marker([data.lat,data.lng])
+.addTo(driverMap)
+.bindPopup(child.key);
+
+});
+
+});
+
+}
+
+/* MAIN LOGIC */
 
 function listenDemand(){
 
@@ -10,7 +283,7 @@ let demandArray=[];
 let totalDemand=0;
 let assignedBuggy=null;
 
-/* Initialize all blocks */
+/* Initialize */
 
 Object.keys(blockLocations).forEach(function(block){
 
@@ -22,7 +295,7 @@ assignedTo:null
 
 });
 
-/* Update from Firebase */
+/* Update */
 
 snapshot.forEach(function(child){
 
@@ -38,11 +311,7 @@ item.count=count;
 item.assignedTo=assignedTo;
 }
 
-/* ✅ INCLUDE ALL BLOCKS (ADMIN INCLUDED) */
-
 totalDemand += count;
-
-/* Track assigned buggy */
 
 if(assignedTo){
 assignedBuggy=assignedTo;
@@ -54,29 +323,21 @@ assignedBuggy=assignedTo;
 
 demandArray.sort((a,b)=>b.count-a.count);
 
-/* ✅ FINAL DISPATCH LOGIC */
+/* DISPATCH */
 
-let allowMultiple = true;
-
-/* Always allow first buggy */
+let allowMultiple=true;
 
 if(!assignedBuggy){
-allowMultiple = true;
+allowMultiple=true;
 }
-
-/* Restrict second buggy */
-
-else if(totalDemand <= 5){
-allowMultiple = false;
+else if(totalDemand<=5){
+allowMultiple=false;
 }
 
 /* UI */
 
 const container=document.getElementById("demandList");
 container.innerHTML="";
-
-Object.values(demandMarkers).forEach(m=>driverMap.removeLayer(m));
-demandMarkers={};
 
 demandArray.forEach(function(item){
 
@@ -85,24 +346,15 @@ row.className="block";
 
 let action="";
 
-/* CASE 1: Not assigned */
-
 if(!item.assignedTo){
 
 if(allowMultiple || !assignedBuggy){
-
 action=`<button onclick="claim('${item.block}')">Claim</button>`;
-
 }else{
-
 action=`<span class="assigned">Not required</span>`;
-
 }
 
 }
-
-/* CASE 2: Assigned to current buggy */
-
 else if(item.assignedTo===currentBuggy){
 
 action=`
@@ -113,9 +365,6 @@ action=`
 `;
 
 }
-
-/* CASE 3: Assigned to another buggy */
-
 else{
 
 action=`<span class="assigned">Assigned to ${item.assignedTo}</span>`;
@@ -130,44 +379,66 @@ ${action}
 
 container.appendChild(row);
 
-/* Map markers */
-
-if(item.count>0){
-
-const loc=blockLocations[item.block];
-
-demandMarkers[item.block]=L.circleMarker(loc,{
-radius:8,
-color:"red"
-}).addTo(driverMap);
-
-}
-
 });
 
 /* STATUS */
 
 if(!assignedBuggy){
-
-document.getElementById("status").innerText =
-"🟢 No buggy assigned yet";
-
+document.getElementById("status").innerText="🟢 No buggy assigned yet";
 }
 else if(!allowMultiple && currentBuggy!==assignedBuggy){
-
-document.getElementById("status").innerText =
-"🚫 Only one buggy required";
-
+document.getElementById("status").innerText="🚫 Only one buggy required";
 }
 else{
-
-document.getElementById("status").innerText =
-"🟢 You can operate";
-
+document.getElementById("status").innerText="🟢 You can operate";
 }
 
 });
 
 }
 
+/* CLAIM */
+
+function claim(block){
+
+firebase.database().ref("requests/"+block).transaction(function(data){
+
+if(data===null) return;
+
+if(!data.assignedTo){
+data.assignedTo=currentBuggy;
+}
+
+return data;
+
+});
+
+}
+
+/* BOARDED */
+
+function boarded(block){
+
+firebase.database().ref("requests/"+block).set({
+count:0,
+assignedTo:null
+});
+
+}
+
+/* REMAINING */
+
+function setRemaining(block,value){
+
+firebase.database().ref("requests/"+block).set({
+count:value,
+assignedTo:currentBuggy
+});
+
+}
+
 </script>
+
+</body>
+
+</html>

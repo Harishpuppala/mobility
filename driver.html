@@ -100,9 +100,9 @@ gap:6px;
 }
 
 .location{
-width:120px;
+width:130px;
 text-align:left;
-font-size:14px;
+font-size:13px;
 font-weight:bold;
 background:#E8F5E9;
 padding:4px 6px;
@@ -185,13 +185,18 @@ const pinBuggyMap={
 
 let currentBuggy=null;
 
+/* UPDATED STOPS */
+
 const blockLocations={
-CV_RAMAN:[16.4638,80.5074],
-SR_BLOCK:[16.4631,80.5063],
-ADMIN:[16.4625,80.5070],
-X_LAB:[16.4636,80.5059],
-JC_BOSE:[16.4642,80.5068],
-GATE6:[16.4650,80.5075]
+
+ADMIN:[16.464509614468533, 80.5080319038672],
+X_LAB:[16.463689824915953, 80.5071930123218],
+SR_BLOCK_ENTRANCE:[16.463169807345757, 80.50675283342075],
+STUDENT_COUNCIL:[16.462518253955295, 80.50696973315311],
+CV_RAMAN:[16.462071648026914, 80.50630946490254],
+GATE3:[16.460127985822375, 80.507044551306],
+GATE6:[16.45986046805483, 80.50498461479495]
+
 };
 
 let driverMap;
@@ -346,7 +351,7 @@ row.className="block";
 
 let action="";
 
-/* ALWAYS allow boarding */
+/* BOARDING ALWAYS */
 
 if(item.count > 0){
 
@@ -371,7 +376,7 @@ action += `<span class="assigned">Not required</span>`;
 
 }
 
-/* SHOW assignment */
+/* ASSIGNED */
 
 else if(item.assignedTo !== currentBuggy){
 
@@ -380,7 +385,7 @@ action += `<span class="assigned">Assigned to ${item.assignedTo}</span>`;
 }
 
 row.innerHTML=`
-<span class="location">${item.block.replace("_"," ")}</span>
+<span class="location">${item.block.replaceAll("_"," ")}</span>
 <span class="count">${item.count}</span>
 ${action}
 `;

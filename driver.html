@@ -7,6 +7,11 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- Prevent cache -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -56,7 +61,7 @@ display:block;
 }
 
 button{
-padding:6px 8px;
+padding:8px 12px;
 font-size:13px;
 background:#1B5E20;
 color:white;
@@ -72,6 +77,10 @@ background:#145A1A;
 
 .boarded{
 background:#0D47A1;
+}
+
+.boarded:hover{
+background:#08306B;
 }
 
 .status{
@@ -95,47 +104,28 @@ margin-top:10px;
 padding:10px;
 border-radius:8px;
 border:2px solid #ddd;
-flex-wrap:wrap;
-gap:6px;
 background:#fafafa;
 transition:0.2s;
 }
 
-.claimed-self{
-background:#C8E6C9 !important;
-border:3px solid #2E7D32 !important;
-box-shadow:0 0 10px rgba(46,125,50,0.35);
-}
-
-.claimed-other{
-background:#FFCDD2 !important;
-border:3px solid #C62828 !important;
-box-shadow:0 0 10px rgba(198,40,40,0.25);
-}
-
 .location{
-width:130px;
-font-size:13px;
+width:160px;
+font-size:14px;
 font-weight:bold;
 background:#E8F5E9;
-padding:4px;
+padding:6px;
 border-radius:4px;
+text-align:left;
 }
 
 .count{
 font-weight:bold;
-width:30px;
+width:35px;
 text-align:center;
 background:#FFF3E0;
-padding:4px;
+padding:6px;
 border-radius:4px;
-font-size:15px;
-}
-
-.assigned{
-color:#D32F2F;
-font-size:12px;
-font-weight:bold;
+font-size:16px;
 }
 
 </style>
@@ -150,16 +140,20 @@ font-weight:bold;
 
 <h2>Buggy Driver</h2>
 
-<input type="password"
+<input
+type="password"
 id="pinInput"
 maxlength="4"
 placeholder="Enter PIN">
 
-<button onclick="authenticate()">Login</button>
+<button onclick="authenticate()">
+Login
+</button>
 
 <p id="loginStatus" class="status"></p>
 
 </div>
+
 
 <div id="driverPanel" style="display:none;">
 
@@ -177,7 +171,9 @@ placeholder="Enter PIN">
 
 <script>
 
-/* Firebase */
+/* ===================================================== */
+/* FIREBASE */
+/* ===================================================== */
 
 const firebaseConfig={
 apiKey:"AIza...",
@@ -188,9 +184,13 @@ projectId:"mobility-ca790"
 
 firebase.initializeApp(firebaseConfig);
 
+
+/* ===================================================== */
 /* PIN MAP */
+/* ===================================================== */
 
 const pinBuggyMap={
+
 "1421":"buggy1",
 "2632":"buggy2",
 "3743":"buggy3",
@@ -199,21 +199,33 @@ const pinBuggyMap={
 "6176":"buggy6",
 "7287":"buggy7",
 "8398":"buggy8"
+
 };
 
 let currentBuggy=null;
 
+
+/* ===================================================== */
 /* CAR ICON */
+/* ===================================================== */
 
 const buggyIcon=L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+
+iconUrl:
+"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+
 iconSize:[38,38],
 iconAnchor:[19,19]
+
 });
 
+
+/* ===================================================== */
 /* STOPS */
+/* ===================================================== */
 
 const blockLocations={
+
 ADMIN:[16.4645,80.5080],
 X_LAB:[16.4636,80.5071],
 SR_BLOCK_ENTRANCE:[16.4631,80.5067],
@@ -221,12 +233,16 @@ STUDENT_COUNCIL:[16.4625,80.5069],
 CV_RAMAN:[16.4620,80.5063],
 GATE3:[16.4601,80.5070],
 GATE6:[16.4598,80.5049]
+
 };
 
 let driverMap;
 let buggyMarkers={};
 
+
+/* ===================================================== */
 /* REMOVE DRIVER ON EXIT */
+/* ===================================================== */
 
 window.addEventListener("beforeunload",function(){
 
@@ -240,7 +256,10 @@ firebase.database()
 
 });
 
+
+/* ===================================================== */
 /* LOGIN */
+/* ===================================================== */
 
 function authenticate(){
 
@@ -267,6 +286,8 @@ const data=snapshot.val();
 if(data && data.time){
 
 const age=Date.now()-data.time;
+
+/* Prevent multiple active login */
 
 if(age<40000){
 
@@ -297,7 +318,10 @@ listenBuggies();
 
 }
 
+
+/* ===================================================== */
 /* MAP */
+/* ===================================================== */
 
 function initializeMap(){
 
@@ -310,7 +334,10 @@ L.tileLayer(
 
 }
 
+
+/* ===================================================== */
 /* LOCATION SHARING */
+/* ===================================================== */
 
 function startSharing(){
 
@@ -330,7 +357,10 @@ time:Date.now()
 
 }
 
+
+/* ===================================================== */
 /* SHOW BUGGIES */
+/* ===================================================== */
 
 function listenBuggies(){
 
@@ -349,9 +379,9 @@ let d=child.val();
 
 if(!d) return;
 
-/* REMOVE STALE BUGGIES */
-
 const age=Date.now()-d.time;
+
+/* Remove stale */
 
 if(age>30000){
 
@@ -374,7 +404,10 @@ buggyMarkers[child.key]=L.marker(
 
 }
 
-/* DEMAND */
+
+/* ===================================================== */
+/* DEMAND LIST */
+/* ===================================================== */
 
 function listenDemand(){
 
@@ -388,8 +421,7 @@ Object.keys(blockLocations).forEach(b=>{
 
 arr.push({
 block:b,
-count:0,
-assignedTo:null
+count:0
 });
 
 });
@@ -398,115 +430,37 @@ snap.forEach(child=>{
 
 let d=child.val()||{};
 
-/* AUTO CLEAR STALE CLAIMS */
-
-if(d.assignedTo){
-
-firebase.database()
-.ref("drivers/"+d.assignedTo)
-.once("value")
-.then(driverSnap=>{
-
-const driverData=driverSnap.val();
-
-if(!driverData){
-
-firebase.database()
-.ref("requests/"+child.key+"/assignedTo")
-.remove();
-
-return;
-
-}
-
-const age=Date.now()-driverData.time;
-
-if(age>30000){
-
-firebase.database()
-.ref("requests/"+child.key+"/assignedTo")
-.remove();
-
-}
-
-});
-
-}
-
 let item=arr.find(x=>x.block===child.key);
 
 if(item){
 
 item.count=d.count||0;
-item.assignedTo=d.assignedTo||null;
 
 }
 
 });
 
+
+/* Sort highest demand first */
+
 arr.sort((a,b)=>b.count-a.count);
+
+
+/* Clear UI */
 
 document.getElementById("demandList").innerHTML="";
 
+
 arr.forEach(item=>{
+
+/* Hide empty rows */
+
+if(item.count<=0) return;
 
 const row=document.createElement("div");
 
-/* Highlight */
-
-if(item.assignedTo===currentBuggy){
-
-row.className="block claimed-self";
-
-}
-else if(item.assignedTo && item.count>0){
-
-row.className="block claimed-other";
-
-}
-else{
-
 row.className="block";
 
-}
-
-/* Buttons */
-
-let action=`
-<button class="boarded"
-onclick="boarded('${item.block}')">
-Boarded
-</button>
-
-<button onclick="setRemaining('${item.block}',2)">
-2
-</button>
-
-<button onclick="setRemaining('${item.block}',4)">
-4
-</button>
-`;
-
-/* CLAIM */
-
-if(!item.assignedTo){
-
-action+=`
-<button onclick="claim('${item.block}')">
-Claim
-</button>
-`;
-
-}
-else if(item.assignedTo!==currentBuggy && item.count>0){
-
-action+=`
-<span class="assigned">
-Assigned
-</span>
-`;
-
-}
 
 row.innerHTML=`
 
@@ -518,7 +472,12 @@ ${item.block.replaceAll("_"," ")}
 ${item.count}
 </span>
 
-${action}
+<button class="boarded"
+onclick="boarded('${item.block}')">
+
+Boarded
+
+</button>
 
 `;
 
@@ -531,103 +490,36 @@ document.getElementById("demandList")
 
 }
 
-/* CLAIM */
 
-function claim(block){
-
-firebase.database()
-.ref("requests")
-.once("value")
-.then(snapshot=>{
-
-let active=false;
-
-snapshot.forEach(child=>{
-
-let d=child.val();
-
-if(
-d &&
-d.assignedTo===currentBuggy &&
-d.count>0
-){
-active=true;
-}
-
-});
-
-if(active){
-
-document.getElementById("status").innerText=
-"⚠️ Finish current trip before claiming another";
-
-return;
-
-}
-
-/* SAFE CLAIM */
-
-firebase.database()
-.ref("requests/"+block)
-.transaction(function(data){
-
-if(data===null){
-
-return {
-count:0,
-assignedTo:currentBuggy
-};
-
-}
-
-/* ALLOW SECOND BUGGY IF DEMAND > 8 */
-
-if(data.assignedTo && data.count<=8){
-return;
-}
-
-data.assignedTo=currentBuggy;
-
-return data;
-
-});
-
-});
-
-}
-
+/* ===================================================== */
 /* BOARDED */
+/* ===================================================== */
 
 function boarded(block){
 
 firebase.database()
 .ref("requests/"+block)
-.update({
-
-count:0,
-assignedTo:null
-
-});
+.remove();
 
 document.getElementById("status").innerText=
-"✅ Trip completed. You can claim next location";
+"✅ Passengers boarded successfully";
 
 }
 
-/* REMAINING */
 
-function setRemaining(block,val){
+/* ===================================================== */
+/* HARD REFRESH */
+/* ===================================================== */
 
-firebase.database()
-.ref("requests/"+block)
-.update({
+window.onpageshow=function(event){
 
-count:val,
-assignedTo:currentBuggy
+if(event.persisted){
 
-});
+window.location.reload();
 
 }
+
+};
 
 </script>
 

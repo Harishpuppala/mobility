@@ -142,6 +142,15 @@ border-radius:4px;
 font-size:16px;
 }
 
+.claimInfo{
+font-size:12px;
+font-weight:bold;
+color:#2E7D32;
+margin-top:4px;
+width:100%;
+text-align:left;
+}
+
 @keyframes pulse{
 
 0%{
@@ -530,6 +539,8 @@ row.className="block";
 
 row.innerHTML=`
 
+<div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;">
+
 <span class="location">
 ${item.block.replaceAll("_"," ")}
 </span>
@@ -548,7 +559,11 @@ Claim
 </button>
 `
 :
-""
+`
+<div class="claimInfo">
+🚗 Claimed by ${item.assignedTo.toUpperCase()}
+</div>
+`
 }
 
 <button class="boarded"
@@ -557,6 +572,8 @@ onclick="boarded('${item.block}')">
 Boarded
 
 </button>
+
+</div>
 
 `;
 
@@ -577,11 +594,15 @@ document.getElementById("demandList")
 function claim(block){
 
 firebase.database()
-.ref("requests/"+block+"/assignedTo")
-.set(currentBuggy);
+.ref("requests/"+block)
+.update({
+
+assignedTo:currentBuggy
+
+});
 
 document.getElementById("status").innerText=
-"📍 Location claimed";
+"📍 Location claimed by " + currentBuggy;
 
 }
 

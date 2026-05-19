@@ -83,6 +83,14 @@ background:#0D47A1;
 background:#08306B;
 }
 
+.claimBtn{
+background:#2E7D32;
+}
+
+.claimBtn:hover{
+background:#1B5E20;
+}
+
 .status{
 margin-top:10px;
 font-size:14px;
@@ -106,11 +114,16 @@ border-radius:8px;
 border:2px solid #ddd;
 background:#fafafa;
 transition:0.2s;
-animation: pulse 1s ease;
+animation:pulse 1s ease;
+}
+
+.claimed{
+background:#E8F5E9;
+border:2px solid #2E7D32;
 }
 
 .location{
-width:160px;
+width:140px;
 font-size:14px;
 font-weight:bold;
 background:#E8F5E9;
@@ -130,14 +143,17 @@ font-size:16px;
 }
 
 @keyframes pulse{
+
 0%{
 transform:scale(0.97);
 background:#FFF9C4;
 }
+
 100%{
 transform:scale(1);
 background:#fafafa;
 }
+
 }
 
 </style>
@@ -166,7 +182,6 @@ Login
 
 </div>
 
-
 <div id="driverPanel" style="display:none;">
 
 <p id="status" class="status"></p>
@@ -183,7 +198,7 @@ Login
 
 <!-- ALERT SOUND -->
 
-<audio id="alertSound">
+<audio id="alertSound" loop>
 <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
 </audio>
 
@@ -194,10 +209,12 @@ Login
 /* ===================================================== */
 
 const firebaseConfig={
+
 apiKey:"AIza...",
 authDomain:"mobility-ca790.firebaseapp.com",
 databaseURL:"https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
 projectId:"mobility-ca790"
+
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -256,8 +273,6 @@ GATE6:[16.4598,80.5049]
 
 let driverMap;
 let buggyMarkers={};
-
-let previousTotalRequests=0;
 
 
 /* ===================================================== */
@@ -433,11 +448,14 @@ firebase.database()
 
 let arr=[];
 
+let unclaimedExists=false;
+
 Object.keys(blockLocations).forEach(b=>{
 
 arr.push({
 block:b,
-count:0
+count:0,
+assignedTo:null
 });
 
 });
@@ -451,36 +469,41 @@ let item=arr.find(x=>x.block===child.key);
 if(item){
 
 item.count=d.count||0;
+item.assignedTo=d.assignedTo||null;
 
+}
+
+/* SOUND CONDITION */
+
+if(
+(d.count||0)>0 &&
+!d.assignedTo
+){
+unclaimedExists=true;
 }
 
 });
 
 
-/* Sort highest demand first */
-
-arr.sort((a,b)=>b.count-a.count);
-
-
-/* ALERT LOGIC */
-
-let currentTotalRequests=0;
-
-arr.forEach(item=>{
-currentTotalRequests += item.count;
-});
-
-if(currentTotalRequests > previousTotalRequests){
+/* SOUND PLAY / STOP */
 
 const sound=document.getElementById("alertSound");
 
-if(sound){
-sound.play();
-}
+if(unclaimedExists){
+
+sound.play().catch(()=>{});
+
+}else{
+
+sound.pause();
+sound.currentTime=0;
 
 }
 
-previousTotalRequests=currentTotalRequests;
+
+/* Sort */
+
+arr.sort((a,b)=>b.count-a.count);
 
 
 /* Clear UI */
@@ -494,7 +517,15 @@ if(item.count<=0) return;
 
 const row=document.createElement("div");
 
+if(item.assignedTo){
+
+row.className="block claimed";
+
+}else{
+
 row.className="block";
+
+}
 
 
 row.innerHTML=`
@@ -506,6 +537,19 @@ ${item.block.replaceAll("_"," ")}
 <span class="count">
 ${item.count}
 </span>
+
+${
+!item.assignedTo
+?
+`
+<button class="claimBtn"
+onclick="claim('${item.block}')">
+Claim
+</button>
+`
+:
+""
+}
 
 <button class="boarded"
 onclick="boarded('${item.block}')">
@@ -522,6 +566,22 @@ document.getElementById("demandList")
 });
 
 });
+
+}
+
+
+/* ===================================================== */
+/* CLAIM */
+/* ===================================================== */
+
+function claim(block){
+
+firebase.database()
+.ref("requests/"+block+"/assignedTo")
+.set(currentBuggy);
+
+document.getElementById("status").innerText=
+"📍 Location claimed";
 
 }
 

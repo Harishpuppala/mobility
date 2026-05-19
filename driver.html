@@ -268,8 +268,6 @@ if(data && data.time){
 
 const age=Date.now()-data.time;
 
-/* Prevent multiple active logins */
-
 if(age<40000){
 
 document.getElementById("loginStatus").innerText=
@@ -351,11 +349,19 @@ let d=child.val();
 
 if(!d) return;
 
-/* Ignore stale drivers */
+/* REMOVE STALE BUGGIES */
 
 const age=Date.now()-d.time;
 
-if(age>30000) return;
+if(age>30000){
+
+firebase.database()
+.ref("drivers/"+child.key)
+.remove();
+
+return;
+
+}
 
 buggyMarkers[child.key]=L.marker(
 [d.lat,d.lng],
@@ -392,6 +398,41 @@ snap.forEach(child=>{
 
 let d=child.val()||{};
 
+/* AUTO CLEAR STALE CLAIMS */
+
+if(d.assignedTo){
+
+firebase.database()
+.ref("drivers/"+d.assignedTo)
+.once("value")
+.then(driverSnap=>{
+
+const driverData=driverSnap.val();
+
+if(!driverData){
+
+firebase.database()
+.ref("requests/"+child.key+"/assignedTo")
+.remove();
+
+return;
+
+}
+
+const age=Date.now()-driverData.time;
+
+if(age>30000){
+
+firebase.database()
+.ref("requests/"+child.key+"/assignedTo")
+.remove();
+
+}
+
+});
+
+}
+
 let item=arr.find(x=>x.block===child.key);
 
 if(item){
@@ -411,14 +452,14 @@ arr.forEach(item=>{
 
 const row=document.createElement("div");
 
-/* Highlighting */
+/* Highlight */
 
 if(item.assignedTo===currentBuggy){
 
 row.className="block claimed-self";
 
 }
-else if(item.assignedTo){
+else if(item.assignedTo && item.count>0){
 
 row.className="block claimed-other";
 
@@ -446,7 +487,7 @@ Boarded
 </button>
 `;
 
-/* Claim button */
+/* CLAIM */
 
 if(!item.assignedTo){
 
@@ -457,7 +498,7 @@ Claim
 `;
 
 }
-else if(item.assignedTo!==currentBuggy){
+else if(item.assignedTo!==currentBuggy && item.count>0){
 
 action+=`
 <span class="assigned">
@@ -501,8 +542,6 @@ firebase.database()
 
 let active=false;
 
-/* One active claim per driver */
-
 snapshot.forEach(child=>{
 
 let d=child.val();
@@ -526,7 +565,7 @@ return;
 
 }
 
-/* Safe claim */
+/* SAFE CLAIM */
 
 firebase.database()
 .ref("requests/"+block)
@@ -541,10 +580,10 @@ assignedTo:currentBuggy
 
 }
 
-if(data.assignedTo){
+/* ALLOW SECOND BUGGY IF DEMAND > 8 */
 
+if(data.assignedTo && data.count<=8){
 return;
-
 }
 
 data.assignedTo=currentBuggy;

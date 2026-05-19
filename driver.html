@@ -52,6 +52,7 @@ border:1px solid #ccc;
 text-align:center;
 letter-spacing:4px;
 margin:auto;
+display:block;
 }
 
 button{
@@ -65,16 +66,23 @@ cursor:pointer;
 margin:2px;
 }
 
+button:hover{
+background:#145A1A;
+}
+
 .boarded{
 background:#0D47A1;
 }
 
 .status{
 margin-top:10px;
+font-size:14px;
+color:#444;
+font-weight:bold;
 }
 
 #driverMap{
-height:200px;
+height:220px;
 border-radius:8px;
 margin-bottom:15px;
 }
@@ -86,20 +94,23 @@ justify-content:space-between;
 margin-top:10px;
 padding:10px;
 border-radius:8px;
-border:1px solid #ddd;
+border:2px solid #ddd;
 flex-wrap:wrap;
 gap:6px;
 background:#fafafa;
+transition:0.2s;
 }
 
 .claimed-self{
 background:#C8E6C9 !important;
-border:2px solid #2E7D32;
+border:3px solid #2E7D32 !important;
+box-shadow:0 0 10px rgba(46,125,50,0.35);
 }
 
 .claimed-other{
 background:#FFCDD2 !important;
-border:2px solid #C62828;
+border:3px solid #C62828 !important;
+box-shadow:0 0 10px rgba(198,40,40,0.25);
 }
 
 .location{
@@ -118,11 +129,13 @@ text-align:center;
 background:#FFF3E0;
 padding:4px;
 border-radius:4px;
+font-size:15px;
 }
 
 .assigned{
 color:#D32F2F;
 font-size:12px;
+font-weight:bold;
 }
 
 </style>
@@ -134,17 +147,30 @@ font-size:12px;
 <div class="container">
 
 <div id="loginSection">
+
 <h2>Buggy Driver</h2>
-<input type="password" id="pinInput" maxlength="4" placeholder="Enter PIN">
+
+<input type="password"
+id="pinInput"
+maxlength="4"
+placeholder="Enter PIN">
+
 <button onclick="authenticate()">Login</button>
+
 <p id="loginStatus" class="status"></p>
+
 </div>
 
 <div id="driverPanel" style="display:none;">
+
 <p id="status" class="status"></p>
+
 <div id="driverMap"></div>
+
 <h3>Waiting Passengers</h3>
+
 <div id="demandList"></div>
+
 </div>
 
 </div>
@@ -152,6 +178,7 @@ font-size:12px;
 <script>
 
 /* Firebase */
+
 const firebaseConfig={
 apiKey:"AIza...",
 authDomain:"mobility-ca790.firebaseapp.com",
@@ -161,19 +188,30 @@ projectId:"mobility-ca790"
 
 firebase.initializeApp(firebaseConfig);
 
-/* PIN map */
+/* PIN MAP */
+
 const pinBuggyMap={
-"1421":"buggy1","2632":"buggy2","3743":"buggy3",
-"4854":"buggy4","5965":"buggy5","6176":"buggy6",
-"7287":"buggy7","8398":"buggy8"
+"1421":"buggy1",
+"2632":"buggy2",
+"3743":"buggy3",
+"4854":"buggy4",
+"5965":"buggy5",
+"6176":"buggy6",
+"7287":"buggy7",
+"8398":"buggy8"
 };
 
 let currentBuggy=null;
 
+/* CAR ICON */
+
 const buggyIcon=L.icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
-iconSize:[38,38]
+iconSize:[38,38],
+iconAnchor:[19,19]
 });
+
+/* STOPS */
 
 const blockLocations={
 ADMIN:[16.4645,80.5080],
@@ -185,98 +223,184 @@ GATE3:[16.4601,80.5070],
 GATE6:[16.4598,80.5049]
 };
 
-let driverMap, buggyMarkers={};
+let driverMap;
+let buggyMarkers={};
+
+/* REMOVE DRIVER ON EXIT */
+
+window.addEventListener("beforeunload",function(){
+
+if(currentBuggy){
+
+firebase.database()
+.ref("drivers/"+currentBuggy)
+.remove();
+
+}
+
+});
 
 /* LOGIN */
+
 function authenticate(){
 
 const pin=document.getElementById("pinInput").value;
 
 if(!pinBuggyMap[pin]){
-document.getElementById("loginStatus").innerText="Invalid PIN";
+
+document.getElementById("loginStatus").innerText=
+"Invalid PIN";
+
 return;
+
 }
 
 const buggyId=pinBuggyMap[pin];
-const ref=firebase.database().ref("drivers/"+buggyId);
 
-ref.once("value").then(snapshot=>{
+firebase.database()
+.ref("drivers/"+buggyId)
+.once("value")
+.then(snapshot=>{
 
 const data=snapshot.val();
 
 if(data && data.time){
+
 const age=Date.now()-data.time;
 
+/* Prevent multiple active logins */
+
 if(age<40000){
+
 document.getElementById("loginStatus").innerText=
 "⚠️ Buggy already active on another device";
+
 return;
+
 }
+
 }
 
 currentBuggy=buggyId;
 
 document.getElementById("loginSection").style.display="none";
+
 document.getElementById("driverPanel").style.display="block";
 
 initializeMap();
+
 startSharing();
+
 listenDemand();
+
 listenBuggies();
 
 });
+
 }
 
 /* MAP */
+
 function initializeMap(){
-driverMap=L.map('driverMap').setView([16.4632,80.5069],16);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(driverMap);
+
+driverMap=L.map('driverMap')
+.setView([16.4632,80.5069],16);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+).addTo(driverMap);
+
 }
 
-/* LOCATION */
+/* LOCATION SHARING */
+
 function startSharing(){
+
 navigator.geolocation.watchPosition(pos=>{
-firebase.database().ref("drivers/"+currentBuggy).set({
+
+firebase.database()
+.ref("drivers/"+currentBuggy)
+.set({
+
 lat:pos.coords.latitude,
 lng:pos.coords.longitude,
 time:Date.now()
+
 });
+
 });
+
 }
 
-/* BUGGIES */
+/* SHOW BUGGIES */
+
 function listenBuggies(){
-firebase.database().ref("drivers").on("value",snap=>{
-Object.values(buggyMarkers).forEach(m=>driverMap.removeLayer(m));
+
+firebase.database()
+.ref("drivers")
+.on("value",snap=>{
+
+Object.values(buggyMarkers)
+.forEach(m=>driverMap.removeLayer(m));
+
 buggyMarkers={};
 
 snap.forEach(child=>{
-let d=child.val();
-if(!d)return;
 
-buggyMarkers[child.key]=L.marker([d.lat,d.lng],{icon:buggyIcon}).addTo(driverMap);
+let d=child.val();
+
+if(!d) return;
+
+/* Ignore stale drivers */
+
+const age=Date.now()-d.time;
+
+if(age>30000) return;
+
+buggyMarkers[child.key]=L.marker(
+[d.lat,d.lng],
+{icon:buggyIcon}
+).addTo(driverMap);
+
 });
+
 });
+
 }
 
 /* DEMAND */
+
 function listenDemand(){
 
-firebase.database().ref("requests").on("value",snap=>{
+firebase.database()
+.ref("requests")
+.on("value",snap=>{
 
 let arr=[];
 
 Object.keys(blockLocations).forEach(b=>{
-arr.push({block:b,count:0,assignedTo:null});
+
+arr.push({
+block:b,
+count:0,
+assignedTo:null
+});
+
 });
 
 snap.forEach(child=>{
+
 let d=child.val()||{};
+
 let item=arr.find(x=>x.block===child.key);
+
 if(item){
+
 item.count=d.count||0;
 item.assignedTo=d.assignedTo||null;
+
 }
+
 });
 
 arr.sort((a,b)=>b.count-a.count);
@@ -287,94 +411,183 @@ arr.forEach(item=>{
 
 const row=document.createElement("div");
 
+/* Highlighting */
+
 if(item.assignedTo===currentBuggy){
+
 row.className="block claimed-self";
+
 }
 else if(item.assignedTo){
+
 row.className="block claimed-other";
+
 }
 else{
+
 row.className="block";
+
 }
+
+/* Buttons */
 
 let action=`
-<button class="boarded" onclick="boarded('${item.block}')">Boarded</button>
-<button onclick="setRemaining('${item.block}',2)">2</button>
-<button onclick="setRemaining('${item.block}',4)">4</button>
+<button class="boarded"
+onclick="boarded('${item.block}')">
+Boarded
+</button>
+
+<button onclick="setRemaining('${item.block}',2)">
+2
+</button>
+
+<button onclick="setRemaining('${item.block}',4)">
+4
+</button>
 `;
 
+/* Claim button */
+
 if(!item.assignedTo){
-action+=`<button onclick="claim('${item.block}')">Claim</button>`;
+
+action+=`
+<button onclick="claim('${item.block}')">
+Claim
+</button>
+`;
+
 }
 else if(item.assignedTo!==currentBuggy){
-action+=`<span class="assigned">Assigned</span>`;
+
+action+=`
+<span class="assigned">
+Assigned
+</span>
+`;
+
 }
 
 row.innerHTML=`
-<span class="location">${item.block.replaceAll("_"," ")}</span>
-<span class="count">${item.count}</span>
+
+<span class="location">
+${item.block.replaceAll("_"," ")}
+</span>
+
+<span class="count">
+${item.count}
+</span>
+
 ${action}
+
 `;
 
-document.getElementById("demandList").appendChild(row);
+document.getElementById("demandList")
+.appendChild(row);
 
 });
 
 });
+
 }
 
-/* 🔒 CLAIM WITH SINGLE-ACTIVE RULE */
+/* CLAIM */
+
 function claim(block){
 
-const ref = firebase.database().ref("requests");
-
-ref.once("value").then(snapshot=>{
+firebase.database()
+.ref("requests")
+.once("value")
+.then(snapshot=>{
 
 let active=false;
 
+/* One active claim per driver */
+
 snapshot.forEach(child=>{
+
 let d=child.val();
-if(d && d.assignedTo===currentBuggy && d.count>0){
+
+if(
+d &&
+d.assignedTo===currentBuggy &&
+d.count>0
+){
 active=true;
 }
+
 });
 
 if(active){
-document.getElementById("status").innerText =
+
+document.getElementById("status").innerText=
 "⚠️ Finish current trip before claiming another";
+
 return;
+
 }
 
-/* safe claim */
-firebase.database().ref("requests/"+block).transaction(function(data){
+/* Safe claim */
+
+firebase.database()
+.ref("requests/"+block)
+.transaction(function(data){
 
 if(data===null){
-return {count:0,assignedTo:currentBuggy};
+
+return {
+count:0,
+assignedTo:currentBuggy
+};
+
 }
 
 if(data.assignedTo){
+
 return;
+
 }
 
 data.assignedTo=currentBuggy;
+
 return data;
 
 });
 
 });
+
 }
 
 /* BOARDED */
+
 function boarded(block){
-firebase.database().ref("requests/"+block+"/count").set(0);
+
+firebase.database()
+.ref("requests/"+block)
+.update({
+
+count:0,
+assignedTo:null
+
+});
+
+document.getElementById("status").innerText=
+"✅ Trip completed. You can claim next location";
+
 }
 
 /* REMAINING */
+
 function setRemaining(block,val){
-firebase.database().ref("requests/"+block).set({
+
+firebase.database()
+.ref("requests/"+block)
+.update({
+
 count:val,
 assignedTo:currentBuggy
+
 });
+
 }
 
 </script>

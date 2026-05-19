@@ -97,7 +97,8 @@ Centre for Geospatial Technology
 
 <!-- ================= APPLICATION SCRIPT ================= -->
 
-<script src="app.js"></script>
+<!-- ✅ Cache-busting added -->
+<script src="app.js?v=2"></script>
 
 <script>
 
@@ -133,7 +134,7 @@ requestBuggy(block);
 localStorage.setItem("lastBuggyRequestBlock",block);
 localStorage.setItem("lastBuggyRequestTime",Date.now());
 
-/* Disable buttons */
+/* Disable buttons temporarily */
 
 const buttons = document.querySelectorAll(".reqBtn");
 
@@ -141,6 +142,17 @@ buttons.forEach(btn=>{
 btn.disabled = true;
 btn.style.opacity = 0.5;
 });
+
+/* Re-enable after 10 minutes */
+
+setTimeout(function(){
+
+buttons.forEach(btn=>{
+btn.disabled = false;
+btn.style.opacity = 1;
+});
+
+},600000);
 
 document.getElementById("requestStatus").innerText =
 "Request sent from " + block.replaceAll("_"," ") +

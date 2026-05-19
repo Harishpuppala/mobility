@@ -353,11 +353,44 @@ const requestsRef =
 firebase.database().ref("requests");
 
 
-/* No request markers on map */
+/* ===================================================== */
+/* LIVE CLAIM STATUS */
+/* ===================================================== */
 
 requestsRef.on("value",function(snapshot){
 
-/* intentionally empty */
+let claimedMessage = "";
+
+snapshot.forEach(function(child){
+
+const data = child.val();
+
+if(!data) return;
+
+if(data.assignedTo){
+
+claimedMessage +=
+"🚗 " +
+child.key.replaceAll("_"," ") +
+" claimed by " +
+data.assignedTo.toUpperCase() +
+"<br>";
+
+}
+
+});
+
+
+/* Show live claim message */
+
+const statusBox =
+document.getElementById("requestStatus");
+
+if(claimedMessage !== ""){
+
+statusBox.innerHTML = claimedMessage;
+
+}
 
 });
 

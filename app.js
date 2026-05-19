@@ -16,12 +16,21 @@ firebase.initializeApp(firebaseConfig);
 /* ===================================================== */
 
 if ('serviceWorker' in navigator) {
-navigator.serviceWorker.getRegistrations().then(function(registrations) {
+
+navigator.serviceWorker
+.getRegistrations()
+.then(function(registrations) {
+
 registrations.forEach(function(registration) {
+
 registration.unregister();
+
 });
+
 });
+
 }
+
 
 /* ===================================================== */
 /* MAP INITIALIZATION */
@@ -49,25 +58,35 @@ const markers = {};
 /* Active buggy */
 
 const greenIcon = L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+
+iconUrl:
+"https://cdn-icons-png.flaticon.com/512/744/744465.png",
+
 iconSize:[38,38],
 iconAnchor:[19,19]
+
 });
 
-/* Inactive / warning */
+/* Warning buggy */
 
 const redIcon = L.icon({
-iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744467.png",
+
+iconUrl:
+"https://cdn-icons-png.flaticon.com/512/744/744467.png",
+
 iconSize:[38,38],
 iconAnchor:[19,19]
+
 });
+
 
 /* Timing */
 
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
 
-const driversRef = firebase.database().ref("drivers");
+const driversRef =
+firebase.database().ref("drivers");
 
 
 /* ===================================================== */
@@ -92,22 +111,29 @@ hour12:true
 
 let activeCount = 0;
 
-driversRef.once("value").then(function(snapshot){
 
-/* Remove stale markers first */
+/* Read drivers */
+
+driversRef.once("value")
+.then(function(snapshot){
+
+
+/* Remove stale markers */
 
 Object.keys(markers).forEach(function(id){
 
-const markerStillExists = snapshot.hasChild(id);
+const exists = snapshot.hasChild(id);
 
-if(!markerStillExists){
+if(!exists){
 
 map.removeLayer(markers[id]);
+
 delete markers[id];
 
 }
 
 });
+
 
 snapshot.forEach(function(child){
 
@@ -125,13 +151,18 @@ if(!lat || !lng || !lastUpdate) return;
 const age = Date.now() - lastUpdate;
 
 
-/* Remove offline buggy */
+/* Remove offline drivers */
 
 if(age > OFFLINE_LIMIT){
+
+firebase.database()
+.ref("drivers/"+id)
+.remove();
 
 if(markers[id]){
 
 map.removeLayer(markers[id]);
+
 delete markers[id];
 
 }
@@ -140,11 +171,15 @@ return;
 
 }
 
+
+/* Active */
+
 activeCount++;
 
 let icon = greenIcon;
 
-/* Warning state */
+
+/* Warning */
 
 if(age > WARNING_LIMIT){
 
@@ -158,9 +193,11 @@ icon = redIcon;
 if(markers[id]){
 
 markers[id].setLatLng([lat,lng]);
+
 markers[id].setIcon(icon);
 
-}else{
+}
+else{
 
 markers[id] = L.marker(
 [lat,lng],
@@ -173,6 +210,7 @@ markers[id] = L.marker(
 
 });
 
+
 /* Active count */
 
 document.getElementById("activeBuggies").innerText =
@@ -180,7 +218,43 @@ document.getElementById("activeBuggies").innerText =
 
 });
 
+
+/* ===================================================== */
+/* AUTO CLEAR OLD REQUESTS */
+/* ===================================================== */
+
+firebase.database()
+.ref("requests")
+.once("value")
+.then(function(snapshot){
+
+snapshot.forEach(function(child){
+
+const d = child.val();
+
+if(!d) return;
+
+const reqTime = d.time || 0;
+
+const age = Date.now() - reqTime;
+
+
+/* Remove requests older than 2 hours */
+
+if(reqTime && age > 7200000){
+
+firebase.database()
+.ref("requests/"+child.key)
+.remove();
+
 }
+
+});
+
+});
+
+}
+
 
 /* Refresh every 5 sec */
 
@@ -193,9 +267,11 @@ updateMap();
 /* PASSENGER REQUEST SYSTEM */
 /* ===================================================== */
 
-const requestsRef = firebase.database().ref("requests");
+const requestsRef =
+firebase.database().ref("requests");
 
-/* No request markers shown on map */
+
+/* No request markers on map */
 
 requestsRef.on("value",function(snapshot){
 
@@ -213,15 +289,21 @@ function requestBuggy(block){
 const lastRequest =
 localStorage.getItem("lastBuggyRequest");
 
+
+/* Prevent spam */
+
 if(lastRequest){
 
-const diff = Date.now() - lastRequest;
+const diff =
+Date.now() - parseInt(lastRequest);
+
 
 /* 10 minute lock */
 
 if(diff < 600000){
 
 document.getElementById("requestStatus").innerText =
+
 "You already requested a buggy recently. Please wait a few minutes.";
 
 return;
@@ -240,34 +322,58 @@ firebase.database()
 if(data === null){
 
 return {
+
 count:1,
-assignedTo:null
+assignedTo:null,
+time:Date.now()
+
 };
 
 }
 
-/* Keep assignment if already claimed */
+
+/* Keep assignment */
 
 return {
+
 count:(data.count || 0) + 1,
-assignedTo:data.assignedTo || null
+assignedTo:data.assignedTo || null,
+time:Date.now()
+
 };
 
 });
 
 
-/* Save request time */
+/* Save local time */
 
 localStorage.setItem(
 "lastBuggyRequest",
 Date.now()
 );
 
-/* Success message */
+
+/* Success */
 
 document.getElementById("requestStatus").innerText =
+
 "Request sent successfully from " +
 block.replaceAll("_"," ") +
 ". Please wait for the buggy.";
 
 }
+
+
+/* ===================================================== */
+/* FORCE HARD REFRESH ON BACK CACHE */
+/* ===================================================== */
+
+window.onpageshow = function(event){
+
+if(event.persisted){
+
+window.location.reload();
+
+}
+
+};

@@ -84,11 +84,11 @@ background:#08306B;
 }
 
 .claimBtn{
-background:#2E7D32;
+background:#C62828;
 }
 
 .claimBtn:hover{
-background:#1B5E20;
+background:#8E0000;
 }
 
 .status{
@@ -205,10 +205,10 @@ Login
 
 </div>
 
-<!-- ALERT SOUND -->
+<!-- 🚨 LOUD ALARM SOUND -->
 
 <audio id="alertSound" loop>
-<source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+<source src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" type="audio/ogg">
 </audio>
 
 <script>
@@ -482,7 +482,7 @@ item.assignedTo=d.assignedTo||null;
 
 }
 
-/* SOUND CONDITION */
+/* 🚨 SOUND CONDITION */
 
 if(
 (d.count||0)>0 &&
@@ -494,7 +494,7 @@ unclaimedExists=true;
 });
 
 
-/* SOUND PLAY / STOP */
+/* 🚨 SOUND PLAY / STOP */
 
 const sound=document.getElementById("alertSound");
 
@@ -539,7 +539,7 @@ row.className="block";
 
 row.innerHTML=`
 
-<div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;">
+<div style="display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between;flex-wrap:wrap;">
 
 <span class="location">
 ${item.block.replaceAll("_"," ")}

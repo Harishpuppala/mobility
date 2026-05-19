@@ -7,11 +7,16 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- Prevent browser cache -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <!-- Leaflet Map -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Custom Styles -->
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3">
 
 <!-- Map Library -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -66,16 +71,33 @@ Centre for Geospatial Technology
 
 <div class="requestGrid">
 
-<button class="reqBtn" onclick="sendRequest('ADMIN')">Admin</button>
-<button class="reqBtn" onclick="sendRequest('X_LAB')">X Lab</button>
+<button class="reqBtn" onclick="sendRequest('ADMIN')">
+Admin
+</button>
 
-<button class="reqBtn" onclick="sendRequest('SR_BLOCK_ENTRANCE')">SR Block Entrance</button>
-<button class="reqBtn" onclick="sendRequest('STUDENT_COUNCIL')">Student Council</button>
+<button class="reqBtn" onclick="sendRequest('X_LAB')">
+X Lab
+</button>
 
-<button class="reqBtn" onclick="sendRequest('CV_RAMAN')">CV Raman</button>
-<button class="reqBtn" onclick="sendRequest('GATE3')">Gate 3</button>
+<button class="reqBtn" onclick="sendRequest('SR_BLOCK_ENTRANCE')">
+SR Block Entrance
+</button>
 
-<button class="reqBtn" onclick="sendRequest('GATE6')">Gate 6</button>
+<button class="reqBtn" onclick="sendRequest('STUDENT_COUNCIL')">
+Student Council
+</button>
+
+<button class="reqBtn" onclick="sendRequest('CV_RAMAN')">
+CV Raman
+</button>
+
+<button class="reqBtn" onclick="sendRequest('GATE3')">
+Gate 3
+</button>
+
+<button class="reqBtn" onclick="sendRequest('GATE6')">
+Gate 6
+</button>
 
 </div>
 
@@ -89,34 +111,75 @@ Centre for Geospatial Technology
 <!-- ================= LEGEND ================= -->
 
 <div class="legend">
-<img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" width="20"> Active
+
+<img src="https://cdn-icons-png.flaticon.com/512/744/744465.png" width="20">
+Active
+
 &nbsp;&nbsp;&nbsp;
-<img src="https://cdn-icons-png.flaticon.com/512/744/744467.png" width="20"> Inactive
+
+<img src="https://cdn-icons-png.flaticon.com/512/744/744467.png" width="20">
+Inactive
+
 </div>
 
 
 <!-- ================= APPLICATION SCRIPT ================= -->
 
-<!-- ✅ Cache-busting added -->
-<script src="app.js?v=2"></script>
+<!-- Cache-busting -->
+<script src="app.js?v=5"></script>
 
 <script>
 
-/* Prevent multiple requests */
+/* =============================================== */
+/* CLEAR VERY OLD LOCAL CACHE */
+/* =============================================== */
+
+const lastVisit = localStorage.getItem("lastVisitTime");
+
+if(lastVisit){
+
+const age = Date.now() - parseInt(lastVisit);
+
+/* 12 hours */
+
+if(age > 43200000){
+
+localStorage.removeItem("lastBuggyRequest");
+localStorage.removeItem("lastBuggyRequestBlock");
+localStorage.removeItem("lastBuggyRequestTime");
+
+}
+
+}
+
+localStorage.setItem("lastVisitTime",Date.now());
+
+
+
+/* =============================================== */
+/* SEND REQUEST */
+/* =============================================== */
 
 function sendRequest(block){
 
-const lastRequest = localStorage.getItem("lastBuggyRequestBlock");
-const lastTime = localStorage.getItem("lastBuggyRequestTime");
+const lastRequest =
+localStorage.getItem("lastBuggyRequestBlock");
+
+const lastTime =
+localStorage.getItem("lastBuggyRequestTime");
+
+
+/* Prevent repeated requests */
 
 if(lastTime){
 
-const diff = Date.now() - lastTime;
+const diff = Date.now() - parseInt(lastTime);
 
 if(diff < 600000){
 
 document.getElementById("requestStatus").innerText =
-"You already requested a buggy at " + lastRequest.replaceAll("_"," ") +
+"You already requested a buggy at " +
+lastRequest.replaceAll("_"," ") +
 ". Please wait a few minutes.";
 
 return;
@@ -125,40 +188,76 @@ return;
 
 }
 
-/* Call main request function */
+
+/* Call request function */
 
 requestBuggy(block);
 
+
 /* Save locally */
 
-localStorage.setItem("lastBuggyRequestBlock",block);
-localStorage.setItem("lastBuggyRequestTime",Date.now());
+localStorage.setItem(
+"lastBuggyRequestBlock",
+block
+);
 
-/* Disable buttons temporarily */
+localStorage.setItem(
+"lastBuggyRequestTime",
+Date.now()
+);
 
-const buttons = document.querySelectorAll(".reqBtn");
+
+/* Disable buttons */
+
+const buttons =
+document.querySelectorAll(".reqBtn");
 
 buttons.forEach(btn=>{
+
 btn.disabled = true;
 btn.style.opacity = 0.5;
+
 });
 
-/* Re-enable after 10 minutes */
+
+/* Auto-enable after 10 min */
 
 setTimeout(function(){
 
 buttons.forEach(btn=>{
+
 btn.disabled = false;
 btn.style.opacity = 1;
+
 });
 
 },600000);
 
+
+/* Status */
+
 document.getElementById("requestStatus").innerText =
-"Request sent from " + block.replaceAll("_"," ") +
+"Request sent from " +
+block.replaceAll("_"," ") +
 ". Please wait for the buggy.";
 
 }
+
+
+
+/* =============================================== */
+/* FORCE REFRESH ON BACK/FORWARD CACHE */
+/* =============================================== */
+
+window.onpageshow = function(event){
+
+if(event.persisted){
+
+window.location.reload();
+
+}
+
+};
 
 </script>
 

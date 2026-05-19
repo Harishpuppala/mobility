@@ -205,10 +205,10 @@ Login
 
 </div>
 
-<!-- 🚨 LOUD ALARM SOUND -->
+<!-- 🚨 FAST BEEP ALERT -->
 
 <audio id="alertSound" loop>
-<source src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" type="audio/ogg">
+<source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
 </audio>
 
 <script>
@@ -500,6 +500,7 @@ const sound=document.getElementById("alertSound");
 
 if(unclaimedExists){
 
+sound.playbackRate = 2;
 sound.play().catch(()=>{});
 
 }else{

@@ -285,12 +285,17 @@ let buggyMarkers={};
 
 
 /* ===================================================== */
-/* REMOVE DRIVER + CLAIMS ON EXIT */
+/* CONFIRM BEFORE EXIT + REMOVE CLAIMS */
 /* ===================================================== */
 
-window.addEventListener("beforeunload",function(){
+window.addEventListener("beforeunload", function (e) {
 
 if(currentBuggy){
+
+e.preventDefault();
+
+e.returnValue =
+"Are you sure you want to close the driver dashboard?";
 
 /* Remove driver */
 
@@ -323,6 +328,9 @@ firebase.database()
 });
 
 });
+
+return
+"Are you sure you want to close the driver dashboard?";
 
 }
 
@@ -510,8 +518,6 @@ item.assignedTo=d.assignedTo||null;
 
 }
 
-/* 🚨 SOUND CONDITION */
-
 if(
 (d.count||0)>0 &&
 !d.assignedTo
@@ -521,8 +527,6 @@ unclaimedExists=true;
 
 });
 
-
-/* 🚨 SOUND PLAY / STOP */
 
 const sound=document.getElementById("alertSound");
 
@@ -539,12 +543,7 @@ sound.currentTime=0;
 }
 
 
-/* Sort */
-
 arr.sort((a,b)=>b.count-a.count);
-
-
-/* Clear UI */
 
 document.getElementById("demandList").innerHTML="";
 

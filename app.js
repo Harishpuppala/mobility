@@ -12,14 +12,32 @@ firebase.initializeApp(firebaseConfig);
 
 
 /* ===================================================== */
+/* FORCE FRESH DATA */
+/* ===================================================== */
+
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.getRegistrations().then(function(registrations) {
+registrations.forEach(function(registration) {
+registration.unregister();
+});
+});
+}
+
+/* ===================================================== */
 /* MAP INITIALIZATION */
 /* ===================================================== */
 
-var map = L.map('map').setView([16.463261979207143, 80.50698185003442], 16);
+var map = L.map('map').setView(
+[16.463261979207143, 80.50698185003442],
+16
+);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
 maxZoom:19
-}).addTo(map);
+}
+).addTo(map);
 
 
 /* ===================================================== */
@@ -28,11 +46,15 @@ maxZoom:19
 
 const markers = {};
 
+/* Active buggy */
+
 const greenIcon = L.icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744465.png",
 iconSize:[38,38],
 iconAnchor:[19,19]
 });
+
+/* Inactive / warning */
 
 const redIcon = L.icon({
 iconUrl:"https://cdn-icons-png.flaticon.com/512/744/744467.png",
@@ -40,18 +62,27 @@ iconSize:[38,38],
 iconAnchor:[19,19]
 });
 
+/* Timing */
+
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
 
 const driversRef = firebase.database().ref("drivers");
 
 
+/* ===================================================== */
+/* UPDATE LIVE MAP */
+/* ===================================================== */
+
 function updateMap(){
 
 const now = new Date();
 
+/* Last updated */
+
 document.getElementById("lastUpdate").innerText =
-"Last updated: " + now.toLocaleTimeString("en-IN",{
+"Last updated: " +
+now.toLocaleTimeString("en-IN",{
 timeZone:"Asia/Kolkata",
 hour:"numeric",
 minute:"numeric",
@@ -62,6 +93,21 @@ hour12:true
 let activeCount = 0;
 
 driversRef.once("value").then(function(snapshot){
+
+/* Remove stale markers first */
+
+Object.keys(markers).forEach(function(id){
+
+const markerStillExists = snapshot.hasChild(id);
+
+if(!markerStillExists){
+
+map.removeLayer(markers[id]);
+delete markers[id];
+
+}
+
+});
 
 snapshot.forEach(function(child){
 
@@ -84,8 +130,10 @@ const age = Date.now() - lastUpdate;
 if(age > OFFLINE_LIMIT){
 
 if(markers[id]){
+
 map.removeLayer(markers[id]);
 delete markers[id];
+
 }
 
 return;
@@ -96,8 +144,12 @@ activeCount++;
 
 let icon = greenIcon;
 
+/* Warning state */
+
 if(age > WARNING_LIMIT){
+
 icon = redIcon;
+
 }
 
 
@@ -110,13 +162,18 @@ markers[id].setIcon(icon);
 
 }else{
 
-markers[id] = L.marker([lat,lng],{icon:icon})
+markers[id] = L.marker(
+[lat,lng],
+{icon:icon}
+)
 .addTo(map)
 .bindPopup("<b>"+id+"</b>");
 
 }
 
 });
+
+/* Active count */
 
 document.getElementById("activeBuggies").innerText =
 "Active Buggies: " + activeCount;
@@ -125,7 +182,10 @@ document.getElementById("activeBuggies").innerText =
 
 }
 
+/* Refresh every 5 sec */
+
 setInterval(updateMap,5000);
+
 updateMap();
 
 
@@ -135,12 +195,12 @@ updateMap();
 
 const requestsRef = firebase.database().ref("requests");
 
-/* ❌ NO MAP MARKERS FOR REQUESTS */
-
-/* Just listen (optional, but no UI action needed) */
+/* No request markers shown on map */
 
 requestsRef.on("value",function(snapshot){
+
 /* intentionally empty */
+
 });
 
 
@@ -150,16 +210,19 @@ requestsRef.on("value",function(snapshot){
 
 function requestBuggy(block){
 
-const lastRequest = localStorage.getItem("lastBuggyRequest");
+const lastRequest =
+localStorage.getItem("lastBuggyRequest");
 
 if(lastRequest){
 
 const diff = Date.now() - lastRequest;
 
+/* 10 minute lock */
+
 if(diff < 600000){
 
 document.getElementById("requestStatus").innerText =
-"You already requested a buggy. Please wait a few minutes.";
+"You already requested a buggy recently. Please wait a few minutes.";
 
 return;
 
@@ -168,24 +231,43 @@ return;
 }
 
 
-/* Safe request increment */
+/* Safe increment */
 
 firebase.database()
 .ref("requests/"+block)
 .transaction(function(data){
 
 if(data === null){
-return {count:1};
+
+return {
+count:1,
+assignedTo:null
+};
+
 }
 
-return {count:(data.count || 0) + 1};
+/* Keep assignment if already claimed */
+
+return {
+count:(data.count || 0) + 1,
+assignedTo:data.assignedTo || null
+};
 
 });
 
 
-localStorage.setItem("lastBuggyRequest",Date.now());
+/* Save request time */
+
+localStorage.setItem(
+"lastBuggyRequest",
+Date.now()
+);
+
+/* Success message */
 
 document.getElementById("requestStatus").innerText =
-"Request sent successfully. A buggy will arrive soon.";
+"Request sent successfully from " +
+block.replaceAll("_"," ") +
+". Please wait for the buggy.";
 
 }

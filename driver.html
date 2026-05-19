@@ -285,16 +285,44 @@ let buggyMarkers={};
 
 
 /* ===================================================== */
-/* REMOVE DRIVER ON EXIT */
+/* REMOVE DRIVER + CLAIMS ON EXIT */
 /* ===================================================== */
 
 window.addEventListener("beforeunload",function(){
 
 if(currentBuggy){
 
+/* Remove driver */
+
 firebase.database()
 .ref("drivers/"+currentBuggy)
 .remove();
+
+/* Remove claimed trips */
+
+firebase.database()
+.ref("requests")
+.once("value")
+.then(snapshot=>{
+
+snapshot.forEach(child=>{
+
+const data = child.val();
+
+if(
+data &&
+data.assignedTo === currentBuggy
+){
+
+firebase.database()
+.ref("requests/"+child.key+"/assignedTo")
+.remove();
+
+}
+
+});
+
+});
 
 }
 

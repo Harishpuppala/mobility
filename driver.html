@@ -106,6 +106,7 @@ border-radius:8px;
 border:2px solid #ddd;
 background:#fafafa;
 transition:0.2s;
+animation: pulse 1s ease;
 }
 
 .location{
@@ -126,6 +127,17 @@ background:#FFF3E0;
 padding:6px;
 border-radius:4px;
 font-size:16px;
+}
+
+@keyframes pulse{
+0%{
+transform:scale(0.97);
+background:#FFF9C4;
+}
+100%{
+transform:scale(1);
+background:#fafafa;
+}
 }
 
 </style>
@@ -168,6 +180,12 @@ Login
 </div>
 
 </div>
+
+<!-- ALERT SOUND -->
+
+<audio id="alertSound">
+<source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+</audio>
 
 <script>
 
@@ -239,6 +257,8 @@ GATE6:[16.4598,80.5049]
 let driverMap;
 let buggyMarkers={};
 
+let previousTotalRequests=0;
+
 
 /* ===================================================== */
 /* REMOVE DRIVER ON EXIT */
@@ -286,8 +306,6 @@ const data=snapshot.val();
 if(data && data.time){
 
 const age=Date.now()-data.time;
-
-/* Prevent multiple active login */
 
 if(age<40000){
 
@@ -381,8 +399,6 @@ if(!d) return;
 
 const age=Date.now()-d.time;
 
-/* Remove stale */
-
 if(age>30000){
 
 firebase.database()
@@ -446,14 +462,33 @@ item.count=d.count||0;
 arr.sort((a,b)=>b.count-a.count);
 
 
+/* ALERT LOGIC */
+
+let currentTotalRequests=0;
+
+arr.forEach(item=>{
+currentTotalRequests += item.count;
+});
+
+if(currentTotalRequests > previousTotalRequests){
+
+const sound=document.getElementById("alertSound");
+
+if(sound){
+sound.play();
+}
+
+}
+
+previousTotalRequests=currentTotalRequests;
+
+
 /* Clear UI */
 
 document.getElementById("demandList").innerHTML="";
 
 
 arr.forEach(item=>{
-
-/* Hide empty rows */
 
 if(item.count<=0) return;
 

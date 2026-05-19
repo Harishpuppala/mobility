@@ -126,9 +126,13 @@ const exists = snapshot.hasChild(id);
 
 if(!exists){
 
+if(markers[id]){
+
 map.removeLayer(markers[id]);
 
 delete markers[id];
+
+}
 
 }
 
@@ -220,7 +224,7 @@ document.getElementById("activeBuggies").innerText =
 
 
 /* ===================================================== */
-/* AUTO CLEAR OLD REQUESTS */
+/* AUTO CLEAN INVALID / OLD REQUESTS */
 /* ===================================================== */
 
 firebase.database()
@@ -232,20 +236,98 @@ snapshot.forEach(function(child){
 
 const d = child.val();
 
-if(!d) return;
-
-const reqTime = d.time || 0;
-
-const age = Date.now() - reqTime;
-
-
-/* Remove requests older than 2 hours */
-
-if(reqTime && age > 7200000){
+if(!d){
 
 firebase.database()
 .ref("requests/"+child.key)
 .remove();
+
+return;
+
+}
+
+const count = d.count || 0;
+const assignedTo = d.assignedTo || null;
+const reqTime = d.time || 0;
+
+
+/* Remove empty requests */
+
+if(count <= 0){
+
+firebase.database()
+.ref("requests/"+child.key)
+.remove();
+
+return;
+
+}
+
+
+/* Remove requests older than 2 hours */
+
+if(reqTime){
+
+const age = Date.now() - reqTime;
+
+if(age > 7200000){
+
+firebase.database()
+.ref("requests/"+child.key)
+.remove();
+
+return;
+
+}
+
+}
+
+
+/* Remove old legacy requests without timestamp */
+
+if(!reqTime){
+
+firebase.database()
+.ref("requests/"+child.key)
+.remove();
+
+return;
+
+}
+
+
+/* Remove invalid assignment */
+
+if(assignedTo){
+
+firebase.database()
+.ref("drivers/"+assignedTo)
+.once("value")
+.then(function(driverSnap){
+
+const driver = driverSnap.val();
+
+if(!driver){
+
+firebase.database()
+.ref("requests/"+child.key+"/assignedTo")
+.remove();
+
+return;
+
+}
+
+const age = Date.now() - (driver.time || 0);
+
+if(age > OFFLINE_LIMIT){
+
+firebase.database()
+.ref("requests/"+child.key+"/assignedTo")
+.remove();
+
+}
+
+});
 
 }
 

@@ -10,7 +10,11 @@ appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
 
 };
 
+if (!firebase.apps.length) {
+
 firebase.initializeApp(firebaseConfig);
+
+}
 
 
 /* ===================================================== */
@@ -20,9 +24,13 @@ firebase.initializeApp(firebaseConfig);
 let currentFacultyId = null;
 let isAuthenticated = false;
 
-/* Approved faculty IDs */
+
+/* ===================================================== */
+/* APPROVED FACULTY */
+/* ===================================================== */
 
 const APPROVED_FACULTY = [
+
 "22295",
 "22296",
 "22297",
@@ -30,6 +38,7 @@ const APPROVED_FACULTY = [
 "22299",
 "23104",
 "23019"
+
 ];
 
 
@@ -54,16 +63,11 @@ APPROVED_FACULTY.includes(savedFaculty)
 currentFacultyId = savedFaculty;
 isAuthenticated = true;
 
-console.log(
-"Faculty authenticated:",
-currentFacultyId
-);
-
 }
 else{
 
-isAuthenticated = false;
 currentFacultyId = null;
+isAuthenticated = false;
 
 }
 
@@ -80,9 +84,9 @@ if ('serviceWorker' in navigator) {
 
 navigator.serviceWorker
 .getRegistrations()
-.then(function(registrations) {
+.then(function(registrations){
 
-registrations.forEach(function(registration) {
+registrations.forEach(function(registration){
 
 registration.unregister();
 
@@ -94,41 +98,79 @@ registration.unregister();
 
 
 /* ===================================================== */
-/* MAP INITIALIZATION */
+/* MAP */
 /* ===================================================== */
 
 var map = null;
 
 function initializeMap(){
 
-if(map !== null){
+if(map){
 
 return;
 
 }
 
-map = L.map('map').setView(
+
+/* Wait until DOM fully visible */
+
+const mapElement =
+document.getElementById("map");
+
+if(!mapElement){
+
+console.error("Map container missing");
+
+return;
+
+}
+
+
+/* Create map */
+
+map = L.map('map',{
+
+preferCanvas:true,
+zoomControl:true
+
+}).setView(
 [16.463261979207143, 80.50698185003442],
 16
 );
 
+
+/* OSM Layer */
+
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 {
-maxZoom:19
+
+maxZoom:19,
+attribution:'© OpenStreetMap'
+
 }
 ).addTo(map);
+
+
+/* IMPORTANT */
+
+setTimeout(function(){
+
+map.invalidateSize(true);
+
+updateMap();
+
+},1000);
 
 }
 
 
 /* ===================================================== */
-/* BUGGY TRACKING */
+/* ICONS */
 /* ===================================================== */
 
 const markers = {};
 
-/* Active buggy */
 
 const greenIcon = L.icon({
 
@@ -140,7 +182,6 @@ iconAnchor:[19,19]
 
 });
 
-/* Warning buggy */
 
 const redIcon = L.icon({
 
@@ -153,17 +194,27 @@ iconAnchor:[19,19]
 });
 
 
-/* Timing */
+/* ===================================================== */
+/* TIMING */
+/* ===================================================== */
 
 const WARNING_LIMIT = 30000;
 const OFFLINE_LIMIT = 40000;
 
+
+/* ===================================================== */
+/* DATABASE REFERENCES */
+/* ===================================================== */
+
 const driversRef =
 firebase.database().ref("drivers");
 
+const requestsRef =
+firebase.database().ref("requests");
+
 
 /* ===================================================== */
-/* UPDATE LIVE MAP */
+/* UPDATE MAP */
 /* ===================================================== */
 
 function updateMap(){
@@ -174,19 +225,31 @@ return;
 
 }
 
+
 const now = new Date();
 
-/* Last updated */
 
-document.getElementById("lastUpdate").innerText =
+/* Last update */
+
+const lastUpdateElement =
+document.getElementById("lastUpdate");
+
+if(lastUpdateElement){
+
+lastUpdateElement.innerText =
 "Last updated: " +
 now.toLocaleTimeString("en-IN",{
+
 timeZone:"Asia/Kolkata",
 hour:"numeric",
 minute:"numeric",
 second:"numeric",
 hour12:true
+
 });
+
+}
+
 
 let activeCount = 0;
 
@@ -194,6 +257,7 @@ let activeCount = 0;
 /* Read drivers */
 
 driversRef.once("value")
+
 .then(function(snapshot){
 
 
@@ -223,15 +287,24 @@ snapshot.forEach(function(child){
 const id = child.key;
 const data = child.val();
 
-if(!data) return;
+if(!data){
+
+return;
+
+}
 
 const lat = data.lat;
 const lng = data.lng;
-const lastUpdate = data.time;
+const lastTime = data.time;
 
-if(!lat || !lng || !lastUpdate) return;
+if(!lat || !lng || !lastTime){
 
-const age = Date.now() - lastUpdate;
+return;
+
+}
+
+const age =
+Date.now() - lastTime;
 
 
 /* Remove offline drivers */
@@ -255,14 +328,14 @@ return;
 }
 
 
-/* Active */
+/* Active count */
 
 activeCount++;
 
 let icon = greenIcon;
 
 
-/* Warning */
+/* Warning icon */
 
 if(age > WARNING_LIMIT){
 
@@ -271,7 +344,7 @@ icon = redIcon;
 }
 
 
-/* Update marker */
+/* Marker update */
 
 if(markers[id]){
 
@@ -287,27 +360,46 @@ markers[id] = L.marker(
 {icon:icon}
 )
 .addTo(map)
-.bindPopup("<b>"+id+"</b>");
+.bindPopup("<b>"+id.toUpperCase()+"</b>");
 
 }
 
 });
 
 
-/* Active count */
+/* Update count */
 
-document.getElementById("activeBuggies").innerText =
+const activeElement =
+document.getElementById("activeBuggies");
+
+if(activeElement){
+
+activeElement.innerText =
 "Active Buggies: " + activeCount;
+
+}
+
+})
+
+.catch(function(error){
+
+console.error(
+"Driver fetch error:",
+error
+);
 
 });
 
+}
+
 
 /* ===================================================== */
-/* AUTO CLEAN INVALID / OLD REQUESTS */
+/* AUTO CLEAN REQUESTS */
 /* ===================================================== */
 
-firebase.database()
-.ref("requests")
+function cleanRequests(){
+
+requestsRef
 .once("value")
 .then(function(snapshot){
 
@@ -317,25 +409,30 @@ const d = child.val();
 
 if(!d){
 
-firebase.database()
-.ref("requests/"+child.key)
+requestsRef
+.child(child.key)
 .remove();
 
 return;
 
 }
 
-const count = d.count || 0;
-const assignedTo = d.assignedTo || null;
-const reqTime = d.time || 0;
+const count =
+d.count || 0;
+
+const assignedTo =
+d.assignedTo || null;
+
+const reqTime =
+d.time || 0;
 
 
-/* Remove empty requests */
+/* Remove invalid */
 
 if(count <= 0){
 
-firebase.database()
-.ref("requests/"+child.key)
+requestsRef
+.child(child.key)
 .remove();
 
 return;
@@ -343,16 +440,17 @@ return;
 }
 
 
-/* Remove requests older than 2 hours */
+/* Remove old requests */
 
 if(reqTime){
 
-const age = Date.now() - reqTime;
+const age =
+Date.now() - reqTime;
 
 if(age > 7200000){
 
-firebase.database()
-.ref("requests/"+child.key)
+requestsRef
+.child(child.key)
 .remove();
 
 return;
@@ -362,12 +460,12 @@ return;
 }
 
 
-/* Remove old legacy requests without timestamp */
+/* Remove legacy requests */
 
 if(!reqTime){
 
-firebase.database()
-.ref("requests/"+child.key)
+requestsRef
+.child(child.key)
 .remove();
 
 return;
@@ -375,33 +473,37 @@ return;
 }
 
 
-/* Remove invalid assignment */
+/* Validate assignment */
 
 if(assignedTo){
 
-firebase.database()
-.ref("drivers/"+assignedTo)
+driversRef
+.child(assignedTo)
 .once("value")
 .then(function(driverSnap){
 
-const driver = driverSnap.val();
+const driver =
+driverSnap.val();
 
 if(!driver){
 
-firebase.database()
-.ref("requests/"+child.key+"/assignedTo")
+requestsRef
+.child(child.key)
+.child("assignedTo")
 .remove();
 
 return;
 
 }
 
-const age = Date.now() - (driver.time || 0);
+const age =
+Date.now() - (driver.time || 0);
 
 if(age > OFFLINE_LIMIT){
 
-firebase.database()
-.ref("requests/"+child.key+"/assignedTo")
+requestsRef
+.child(child.key)
+.child("assignedTo")
 .remove();
 
 }
@@ -414,20 +516,9 @@ firebase.database()
 
 });
 
+}
 
-/* Refresh every 5 sec */
-
-setInterval(updateMap,5000);
-
-updateMap();
-
-
-/* ===================================================== */
-/* PASSENGER REQUEST SYSTEM */
-/* ===================================================== */
-
-const requestsRef =
-firebase.database().ref("requests");
+cleanRequests();
 
 
 /* ===================================================== */
@@ -442,7 +533,11 @@ snapshot.forEach(function(child){
 
 const data = child.val();
 
-if(!data) return;
+if(!data){
+
+return;
+
+}
 
 if(data.assignedTo){
 
@@ -458,14 +553,13 @@ data.assignedTo.toUpperCase() +
 });
 
 
-/* Show live claim message */
-
 const statusBox =
 document.getElementById("requestStatus");
 
-if(claimedMessage !== ""){
+if(statusBox && claimedMessage !== ""){
 
-statusBox.innerHTML = claimedMessage;
+statusBox.innerHTML =
+claimedMessage;
 
 }
 
@@ -473,14 +567,15 @@ statusBox.innerHTML = claimedMessage;
 
 
 /* ===================================================== */
-/* FACULTY AUTH CHECK */
+/* VERIFY FACULTY */
 /* ===================================================== */
 
 function verifyFacultyAccess(){
 
 if(!isAuthenticated){
 
-document.getElementById("requestStatus").innerText =
+document.getElementById("requestStatus")
+.innerText =
 "Faculty authentication required.";
 
 return false;
@@ -489,16 +584,20 @@ return false;
 
 if(!currentFacultyId){
 
-document.getElementById("requestStatus").innerText =
+document.getElementById("requestStatus")
+.innerText =
 "Invalid faculty session.";
 
 return false;
 
 }
 
-if(!APPROVED_FACULTY.includes(currentFacultyId)){
+if(
+!APPROVED_FACULTY.includes(currentFacultyId)
+){
 
-document.getElementById("requestStatus").innerText =
+document.getElementById("requestStatus")
+.innerText =
 "Faculty not authorized.";
 
 return false;
@@ -511,12 +610,10 @@ return true;
 
 
 /* ===================================================== */
-/* PASSENGER REQUEST BUTTON */
+/* REQUEST BUGGY */
 /* ===================================================== */
 
 function requestBuggy(block){
-
-/* Faculty validation */
 
 if(!verifyFacultyAccess()){
 
@@ -538,14 +635,11 @@ if(lastRequest){
 const diff =
 Date.now() - parseInt(lastRequest);
 
-
-/* 10 minute lock */
-
 if(diff < 600000){
 
-document.getElementById("requestStatus").innerText =
-
-"You already requested a buggy recently. Please wait a few minutes.";
+document.getElementById("requestStatus")
+.innerText =
+"You already requested recently.";
 
 return;
 
@@ -554,10 +648,10 @@ return;
 }
 
 
-/* Safe increment */
+/* Save request */
 
-firebase.database()
-.ref("requests/"+block)
+requestsRef
+.child(block)
 .transaction(function(data){
 
 if(data === null){
@@ -573,9 +667,6 @@ facultyId:currentFacultyId
 
 }
 
-
-/* Keep assignment */
-
 return {
 
 count:(data.count || 0) + 1,
@@ -588,7 +679,7 @@ facultyId:currentFacultyId
 });
 
 
-/* Save local time */
+/* Save timestamp */
 
 localStorage.setItem(
 "lastBuggyRequest_" + currentFacultyId,
@@ -596,11 +687,11 @@ Date.now()
 );
 
 
-/* Success */
+/* Status */
 
-document.getElementById("requestStatus").innerText =
-
-"Request sent successfully from " +
+document.getElementById("requestStatus")
+.innerText =
+"Request sent from " +
 block.replaceAll("_"," ") +
 ". Please wait for the buggy.";
 
@@ -608,7 +699,22 @@ block.replaceAll("_"," ") +
 
 
 /* ===================================================== */
-/* FORCE HARD REFRESH ON BACK CACHE */
+/* AUTO REFRESH */
+/* ===================================================== */
+
+setInterval(function(){
+
+if(map){
+
+updateMap();
+
+}
+
+},5000);
+
+
+/* ===================================================== */
+/* FORCE HARD REFRESH */
 /* ===================================================== */
 
 window.onpageshow = function(event){

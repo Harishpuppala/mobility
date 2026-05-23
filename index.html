@@ -18,7 +18,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Main CSS -->
 <link rel="stylesheet"
-href="style.css?v=9"/>
+href="style.css?v=10"/>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -49,13 +49,14 @@ font-family:Arial, Helvetica, sans-serif;
 
 #loginContainer{
 
-max-width:400px;
+max-width:420px;
 margin:25px auto;
 padding:25px;
 
 }
 
-#facultyIdInput{
+#facultyIdInput,
+#facultyPinInput{
 
 width:100%;
 padding:12px;
@@ -65,6 +66,13 @@ font-size:16px;
 border-radius:8px;
 border:1px solid #ccc;
 box-sizing:border-box;
+
+}
+
+#facultyPinInput{
+
+letter-spacing:4px;
+text-align:center;
 
 }
 
@@ -157,6 +165,20 @@ background:#CCCCCC;
 
 }
 
+
+/* ===================================================== */
+/* STATUS */
+/* ===================================================== */
+
+#loginStatus{
+
+font-size:14px;
+font-weight:bold;
+margin-top:10px;
+color:#C62828;
+
+}
+
 </style>
 
 </head>
@@ -203,6 +225,13 @@ class="requestBox"
 type="text"
 id="facultyIdInput"
 placeholder="Enter Faculty ID"
+/>
+
+<input
+type="password"
+id="facultyPinInput"
+maxlength="4"
+placeholder="Enter 4 Digit PIN"
 />
 
 <button
@@ -334,25 +363,16 @@ Inactive
 <!-- APP SCRIPT -->
 <!-- ================================================== -->
 
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 
 <script>
 
 /* ===================================================== */
-/* FACULTY IDS */
+/* FIREBASE FACULTY AUTH */
 /* ===================================================== */
 
-const FACULTY_IDS = [
-
-"22295",
-"22296",
-"22297",
-"22298",
-"22299",
-"23104",
-"23019"
-
-];
+const facultyAuthRef =
+firebase.database().ref("facultyAuth");
 
 
 /* ===================================================== */
@@ -367,13 +387,57 @@ localStorage.getItem("facultyId");
 const auth =
 localStorage.getItem("facultyAuthenticated");
 
-if(
-savedFaculty &&
-auth === "true" &&
-FACULTY_IDS.includes(savedFaculty)
-){
+if(savedFaculty && auth === "true"){
+
+facultyAuthRef
+.child(savedFaculty)
+.once("value")
+
+.then(function(snapshot){
+
+const data = snapshot.val();
+
+if(!data){
+
+localStorage.clear();
+return;
+
+}
+
+
+/* Auto reset stale login */
+
+const age =
+Date.now() - (data.lastLogin || 0);
+
+if(age > 3600000){
+
+facultyAuthRef
+.child(savedFaculty)
+.update({
+
+loggedIn:false
+
+});
+
+}
+
+
+/* Restore valid session */
+
+if(data.loggedIn){
+
+currentFacultyId =
+savedFaculty;
+
+isAuthenticated =
+true;
 
 showDashboard(savedFaculty);
+
+}
+
+});
 
 }
 
@@ -391,17 +455,105 @@ document.getElementById("facultyIdInput")
 .value
 .trim();
 
-if(
-!FACULTY_IDS.includes(facultyId)
-){
+const pin =
+document.getElementById("facultyPinInput")
+.value
+.trim();
+
+
+if(!facultyId || !pin){
 
 document.getElementById("loginStatus")
 .innerText =
-"Unauthorized Faculty ID";
+"Enter Faculty ID and PIN";
 
 return;
 
 }
+
+
+facultyAuthRef
+.child(facultyId)
+.once("value")
+
+.then(function(snapshot){
+
+const data = snapshot.val();
+
+if(!data){
+
+document.getElementById("loginStatus")
+.innerText =
+"Invalid Faculty ID";
+
+return;
+
+}
+
+
+if(!data.active){
+
+document.getElementById("loginStatus")
+.innerText =
+"Faculty access disabled";
+
+return;
+
+}
+
+
+if(data.pin !== pin){
+
+document.getElementById("loginStatus")
+.innerText =
+"Invalid PIN";
+
+return;
+
+}
+
+
+/* Auto clear stale sessions */
+
+const age =
+Date.now() - (data.lastLogin || 0);
+
+if(age > 3600000){
+
+facultyAuthRef
+.child(facultyId)
+.update({
+
+loggedIn:false
+
+});
+
+}
+
+
+/* Prevent multiple login */
+
+if(data.loggedIn && age < 3600000){
+
+document.getElementById("loginStatus")
+.innerText =
+"Faculty already logged in on another device";
+
+return;
+
+}
+
+
+/* Login success */
+
+facultyAuthRef
+.child(facultyId)
+.update({
+
+loggedIn:true,
+lastLogin:Date.now()
+
+});
 
 
 /* Save session */
@@ -430,6 +582,8 @@ true;
 
 showDashboard(facultyId);
 
+});
+
 }
 
 
@@ -451,7 +605,7 @@ document.getElementById("facultyDisplay")
 facultyId;
 
 
-/* IMPORTANT */
+/* Initialize map */
 
 setTimeout(function(){
 
@@ -479,6 +633,19 @@ updateMap();
 /* ===================================================== */
 
 function logoutFaculty(){
+
+if(currentFacultyId){
+
+facultyAuthRef
+.child(currentFacultyId)
+.update({
+
+loggedIn:false
+
+});
+
+}
+
 
 localStorage.removeItem("facultyId");
 
@@ -562,7 +729,7 @@ Date.now()
 );
 
 
-/* Disable */
+/* Disable buttons */
 
 const buttons =
 document.querySelectorAll(".reqBtn");

@@ -18,7 +18,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Main CSS -->
 <link rel="stylesheet"
-href="style.css?v=10"/>
+href="style.css?v=11"/>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -363,17 +363,9 @@ Inactive
 <!-- APP SCRIPT -->
 <!-- ================================================== -->
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 
 <script>
-
-/* ===================================================== */
-/* FIREBASE FACULTY AUTH */
-/* ===================================================== */
-
-const facultyAuthRef =
-firebase.database().ref("facultyAuth");
-
 
 /* ===================================================== */
 /* RESTORE SESSION */
@@ -389,8 +381,8 @@ localStorage.getItem("facultyAuthenticated");
 
 if(savedFaculty && auth === "true"){
 
-facultyAuthRef
-.child(savedFaculty)
+firebase.database()
+.ref("facultyAuth/" + savedFaculty)
 .once("value")
 
 .then(function(snapshot){
@@ -405,25 +397,30 @@ return;
 }
 
 
-/* Auto reset stale login */
-
 const age =
 Date.now() - (data.lastLogin || 0);
 
+
+/* Auto reset stale session */
+
 if(age > 3600000){
 
-facultyAuthRef
-.child(savedFaculty)
+firebase.database()
+.ref("facultyAuth/" + savedFaculty)
 .update({
 
 loggedIn:false
 
 });
 
+localStorage.clear();
+
+return;
+
 }
 
 
-/* Restore valid session */
+/* Restore session */
 
 if(data.loggedIn){
 
@@ -472,8 +469,10 @@ return;
 }
 
 
-facultyAuthRef
-.child(facultyId)
+/* Firebase validation */
+
+firebase.database()
+.ref("facultyAuth/" + facultyId)
 .once("value")
 
 .then(function(snapshot){
@@ -513,15 +512,18 @@ return;
 }
 
 
-/* Auto clear stale sessions */
+/* Session age */
 
 const age =
 Date.now() - (data.lastLogin || 0);
 
+
+/* Reset stale session */
+
 if(age > 3600000){
 
-facultyAuthRef
-.child(facultyId)
+firebase.database()
+.ref("facultyAuth/" + facultyId)
 .update({
 
 loggedIn:false
@@ -531,13 +533,13 @@ loggedIn:false
 }
 
 
-/* Prevent multiple login */
+/* Multiple login prevention */
 
 if(data.loggedIn && age < 3600000){
 
 document.getElementById("loginStatus")
 .innerText =
-"Faculty already logged in on another device";
+"Already logged in on another device";
 
 return;
 
@@ -546,8 +548,8 @@ return;
 
 /* Login success */
 
-facultyAuthRef
-.child(facultyId)
+firebase.database()
+.ref("facultyAuth/" + facultyId)
 .update({
 
 loggedIn:true,
@@ -556,7 +558,7 @@ lastLogin:Date.now()
 });
 
 
-/* Save session */
+/* Save local session */
 
 localStorage.setItem(
 "facultyId",
@@ -569,7 +571,7 @@ localStorage.setItem(
 );
 
 
-/* Update app.js */
+/* Global auth state */
 
 currentFacultyId =
 facultyId;
@@ -581,6 +583,16 @@ true;
 /* Open dashboard */
 
 showDashboard(facultyId);
+
+})
+
+.catch(function(error){
+
+console.error(error);
+
+document.getElementById("loginStatus")
+.innerText =
+"Firebase connection error";
 
 });
 
@@ -636,8 +648,8 @@ function logoutFaculty(){
 
 if(currentFacultyId){
 
-facultyAuthRef
-.child(currentFacultyId)
+firebase.database()
+.ref("facultyAuth/" + currentFacultyId)
 .update({
 
 loggedIn:false

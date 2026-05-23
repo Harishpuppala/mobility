@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Custom Styles -->
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 
 <!-- Map Library -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -52,9 +52,47 @@ Centre for Geospatial Technology
 </div>
 
 
+<!-- ================= FACULTY LOGIN ================= -->
+
+<div id="loginContainer" class="requestBox" style="max-width:400px;margin:20px auto;">
+
+<h3>Faculty Authentication</h3>
+
+<input
+type="text"
+id="facultyIdInput"
+placeholder="Enter Faculty ID"
+style="
+width:100%;
+padding:12px;
+margin-top:10px;
+margin-bottom:10px;
+font-size:16px;
+border-radius:8px;
+border:1px solid #ccc;
+"
+/>
+
+<button
+onclick="loginFaculty()"
+class="reqBtn"
+style="width:100%;"
+>
+Login
+</button>
+
+<p id="loginStatus"></p>
+
+</div>
+
+
 <!-- ================= USER DASHBOARD ================= -->
 
-<div class="userContainer">
+<div
+class="userContainer"
+id="mainDashboard"
+style="display:none;"
+>
 
 <!-- MINI MAP -->
 
@@ -67,7 +105,25 @@ Centre for Geospatial Technology
 
 <div class="requestBox">
 
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
 <h3>Request Buggy</h3>
+
+<button
+onclick="logoutFaculty()"
+style="
+padding:8px 12px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+"
+>
+Logout
+</button>
+
+</div>
+
+<p id="facultyDisplay"></p>
 
 <div class="requestGrid">
 
@@ -125,10 +181,132 @@ Inactive
 
 <!-- ================= APPLICATION SCRIPT ================= -->
 
-<!-- Cache-busting -->
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 
 <script>
+
+/* =============================================== */
+/* APPROVED FACULTY */
+/* =============================================== */
+
+const FACULTY_IDS = [
+"22295",
+"22296",
+"22297",
+"22298",
+"22299",
+"23104",
+"23019"
+];
+
+
+/* =============================================== */
+/* AUTO SESSION RESTORE */
+/* =============================================== */
+
+window.onload = function(){
+
+const savedFaculty =
+localStorage.getItem("facultyId");
+
+const auth =
+localStorage.getItem("facultyAuthenticated");
+
+if(
+savedFaculty &&
+auth === "true" &&
+FACULTY_IDS.includes(savedFaculty)
+){
+
+showDashboard(savedFaculty);
+
+}
+
+};
+
+
+/* =============================================== */
+/* FACULTY LOGIN */
+/* =============================================== */
+
+function loginFaculty(){
+
+const facultyId =
+document.getElementById("facultyIdInput")
+.value
+.trim();
+
+if(!FACULTY_IDS.includes(facultyId)){
+
+document.getElementById("loginStatus").innerText =
+"Unauthorized Faculty ID";
+
+return;
+
+}
+
+
+/* Save session */
+
+localStorage.setItem(
+"facultyId",
+facultyId
+);
+
+localStorage.setItem(
+"facultyAuthenticated",
+"true"
+);
+
+
+/* Update app.js state */
+
+currentFacultyId = facultyId;
+isAuthenticated = true;
+
+
+/* Open dashboard */
+
+showDashboard(facultyId);
+
+}
+
+
+/* =============================================== */
+/* SHOW DASHBOARD */
+/* =============================================== */
+
+function showDashboard(facultyId){
+
+document.getElementById("loginContainer")
+.style.display = "none";
+
+document.getElementById("mainDashboard")
+.style.display = "flex";
+
+document.getElementById("facultyDisplay")
+.innerText =
+"Logged in as Faculty ID: " + facultyId;
+
+}
+
+
+/* =============================================== */
+/* LOGOUT */
+/* =============================================== */
+
+function logoutFaculty(){
+
+localStorage.removeItem("facultyId");
+localStorage.removeItem("facultyAuthenticated");
+
+currentFacultyId = null;
+isAuthenticated = false;
+
+window.location.reload();
+
+}
+
 
 /* =============================================== */
 /* CLEAR VERY OLD LOCAL CACHE */
@@ -161,6 +339,15 @@ localStorage.setItem("lastVisitTime",Date.now());
 /* =============================================== */
 
 function sendRequest(block){
+
+if(!isAuthenticated){
+
+document.getElementById("requestStatus").innerText =
+"Faculty authentication required.";
+
+return;
+
+}
 
 const lastRequest =
 localStorage.getItem("lastBuggyRequestBlock");

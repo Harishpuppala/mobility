@@ -18,7 +18,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Main CSS -->
 <link rel="stylesheet"
-href="style.css?v=13"/>
+href="style.css?v=14"/>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -66,13 +66,13 @@ font-size:16px;
 border-radius:8px;
 border:1px solid #ccc;
 box-sizing:border-box;
+text-align:center;
 
 }
 
 #facultyPinInput{
 
 letter-spacing:4px;
-text-align:center;
 
 }
 
@@ -363,9 +363,41 @@ Inactive
 <!-- APP SCRIPT -->
 <!-- ================================================== -->
 
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 
 <script>
+
+/* ===================================================== */
+/* SHA256 HASH FUNCTION */
+/* ===================================================== */
+
+async function sha256(message){
+
+const msgBuffer =
+new TextEncoder().encode(message);
+
+const hashBuffer =
+await crypto.subtle.digest(
+'SHA-256',
+msgBuffer
+);
+
+const hashArray =
+Array.from(
+new Uint8Array(hashBuffer)
+);
+
+const hashHex =
+hashArray
+.map(b =>
+b.toString(16).padStart(2,'0')
+)
+.join('');
+
+return hashHex;
+
+}
+
 
 /* ===================================================== */
 /* RESTORE SESSION */
@@ -396,14 +428,8 @@ return;
 
 }
 
-
-/* Session timeout */
-
 const age =
 Date.now() - (data.lastLogin || 0);
-
-
-/* Reset stale login */
 
 if(age > 3600000){
 
@@ -420,9 +446,6 @@ localStorage.clear();
 return;
 
 }
-
-
-/* Restore valid session */
 
 if(data.loggedIn){
 
@@ -456,7 +479,7 @@ error
 /* LOGIN */
 /* ===================================================== */
 
-function loginFaculty(){
+async function loginFaculty(){
 
 const facultyId =
 document.getElementById("facultyIdInput")
@@ -468,7 +491,6 @@ document.getElementById("facultyPinInput")
 .value
 .trim();
 
-
 if(!facultyId || !pin){
 
 document.getElementById("loginStatus")
@@ -479,8 +501,8 @@ return;
 
 }
 
-
-/* Firebase validation */
+const hashedPin =
+await sha256(pin);
 
 firebase.database()
 .ref("facultyAuth/" + facultyId)
@@ -500,9 +522,6 @@ return;
 
 }
 
-
-/* Active check */
-
 if(data.active !== true){
 
 document.getElementById("loginStatus")
@@ -514,9 +533,11 @@ return;
 }
 
 
-/* PIN validation */
+/* ===================================================== */
+/* HASH VALIDATION */
+/* ===================================================== */
 
-if(String(data.pin) !== String(pin)){
+if(data.pinHash !== hashedPin){
 
 document.getElementById("loginStatus")
 .innerText =
@@ -526,14 +547,8 @@ return;
 
 }
 
-
-/* Session timeout */
-
 const age =
 Date.now() - (data.lastLogin || 0);
-
-
-/* Reset stale login */
 
 if(age > 3600000){
 
@@ -566,9 +581,6 @@ return;
 
 }
 
-
-/* Force overwrite */
-
 firebase.database()
 .ref("facultyAuth/" + facultyId)
 .update({
@@ -594,9 +606,6 @@ lastLogin:Date.now()
 
 });
 
-
-/* Save session */
-
 localStorage.setItem(
 "facultyId",
 facultyId
@@ -607,17 +616,11 @@ localStorage.setItem(
 "true"
 );
 
-
-/* Update globals */
-
 currentFacultyId =
 facultyId;
 
 isAuthenticated =
 true;
-
-
-/* Open dashboard */
 
 showDashboard(facultyId);
 
@@ -655,9 +658,6 @@ document.getElementById("facultyDisplay")
 .innerText =
 "Logged in as Faculty ID: " +
 facultyId;
-
-
-/* Initialize map */
 
 setTimeout(function(){
 
@@ -698,9 +698,6 @@ loggedIn:false
 
 }
 
-
-/* Clear session */
-
 localStorage.removeItem("facultyId");
 
 localStorage.removeItem(
@@ -710,9 +707,6 @@ localStorage.removeItem(
 currentFacultyId = null;
 
 isAuthenticated = false;
-
-
-/* Reload */
 
 window.location.reload();
 
@@ -735,9 +729,6 @@ return;
 
 }
 
-
-/* Cooldown */
-
 const lastRequest =
 localStorage.getItem(
 "lastBuggyRequestBlock"
@@ -747,7 +738,6 @@ const lastTime =
 localStorage.getItem(
 "lastBuggyRequestTime"
 );
-
 
 if(lastTime){
 
@@ -767,13 +757,7 @@ return;
 
 }
 
-
-/* Send request */
-
 requestBuggy(block);
-
-
-/* Save cooldown */
 
 localStorage.setItem(
 "lastBuggyRequestBlock",
@@ -784,9 +768,6 @@ localStorage.setItem(
 "lastBuggyRequestTime",
 Date.now()
 );
-
-
-/* Disable buttons */
 
 const buttons =
 document.querySelectorAll(".reqBtn");
@@ -802,9 +783,6 @@ btn.style.opacity = 0.5;
 
 });
 
-
-/* Re-enable */
-
 setTimeout(function(){
 
 buttons.forEach(btn=>{
@@ -815,9 +793,6 @@ btn.style.opacity = 1;
 });
 
 },600000);
-
-
-/* Status */
 
 document.getElementById("requestStatus")
 .innerText =

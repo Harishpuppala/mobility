@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Custom Styles -->
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 
 <!-- Map Library -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -230,7 +230,7 @@ Inactive
 
 <!-- ================= APPLICATION SCRIPT ================= -->
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 
 <script>
 
@@ -339,14 +339,18 @@ document.getElementById("facultyDisplay")
 
 
 /* =============================================== */
-/* FIX LEAFLET MAP RENDER */
+/* INITIALIZE MAP AFTER DASHBOARD VISIBLE */
 /* =============================================== */
 
 setTimeout(function(){
 
-if(typeof map !== "undefined"){
+initializeMap();
+
+if(map){
 
 map.invalidateSize();
+
+updateMap();
 
 }
 

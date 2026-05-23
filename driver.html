@@ -140,6 +140,47 @@ width:100%;
 text-align:left;
 }
 
+/* ===================================================== */
+/* BUGGY BUTTONS */
+/* ===================================================== */
+
+.buggyGrid{
+
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:15px;
+
+}
+
+.buggySelectBtn{
+
+padding:14px;
+font-size:15px;
+font-weight:bold;
+border-radius:8px;
+background:#ECEFF1;
+color:#333;
+border:2px solid #CFD8DC;
+cursor:pointer;
+transition:0.2s;
+
+}
+
+.buggySelectBtn:hover{
+
+background:#DDE7EA;
+
+}
+
+.selectedBuggy{
+
+background:#1B5E20 !important;
+color:white !important;
+border:2px solid #1B5E20 !important;
+
+}
+
 </style>
 
 </head>
@@ -152,19 +193,79 @@ text-align:left;
 
 <h2>Buggy Driver</h2>
 
-<input
-type="text"
-id="buggyIdInput"
-placeholder="Buggy ID"
+<p style="margin-bottom:10px;font-weight:bold;color:#444;">
+Select Buggy
+</p>
+
+<div class="buggyGrid">
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy1')">
+BUGGY 1
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy2')">
+BUGGY 2
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy3')">
+BUGGY 3
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy4')">
+BUGGY 4
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy5')">
+BUGGY 5
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy6')">
+BUGGY 6
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy7')">
+BUGGY 7
+</button>
+
+<button class="buggySelectBtn"
+onclick="selectBuggy(event,'buggy8')">
+BUGGY 8
+</button>
+
+</div>
+
+<p
+id="selectedBuggyText"
+style="
+font-size:14px;
+font-weight:bold;
+color:#1B5E20;
+margin-top:15px;
+"
 >
+No buggy selected
+</p>
 
 <input
 type="password"
 id="pinInput"
+maxlength="4"
 placeholder="Driver PIN"
 >
 
-<button onclick="authenticate()">
+<button
+onclick="authenticate()"
+id="driverLoginBtn"
+disabled
+style="opacity:0.5;"
+>
 Login
 </button>
 
@@ -226,6 +327,7 @@ firebase.initializeApp(firebaseConfig);
 /* ===================================================== */
 
 let currentBuggy = null;
+let selectedBuggy = null;
 
 const DRIVER_TIMEOUT = 40000;
 
@@ -304,33 +406,62 @@ listenBuggies();
 
 
 /* ===================================================== */
+/* SELECT BUGGY */
+/* ===================================================== */
+
+function selectBuggy(event,buggyId){
+
+selectedBuggy = buggyId;
+
+document
+.querySelectorAll(".buggySelectBtn")
+.forEach(btn=>{
+
+btn.classList.remove("selectedBuggy");
+
+});
+
+event.target.classList.add("selectedBuggy");
+
+document.getElementById(
+"selectedBuggyText"
+).innerText =
+
+"Selected: " +
+buggyId.toUpperCase();
+
+const loginBtn =
+document.getElementById(
+"driverLoginBtn"
+);
+
+loginBtn.disabled = false;
+loginBtn.style.opacity = 1;
+
+}
+
+
+/* ===================================================== */
 /* LOGIN */
 /* ===================================================== */
 
 function authenticate(){
 
-const buggyId =
-document.getElementById("buggyIdInput")
-.value
-.trim()
-.toLowerCase();
+const buggyId = selectedBuggy;
 
 const pin =
 document.getElementById("pinInput")
 .value
 .trim();
 
-if(!buggyId || !pin){
+if(!selectedBuggy || !pin){
 
 document.getElementById("loginStatus")
-.innerText = "Enter Buggy ID and PIN";
+.innerText = "Select buggy and enter PIN";
 
 return;
 
 }
-
-
-/* Read secure driverAuth node */
 
 firebase.database()
 .ref("driverAuth/"+buggyId)
@@ -342,7 +473,7 @@ const data = snapshot.val();
 if(!data){
 
 document.getElementById("loginStatus")
-.innerText = "Invalid Buggy ID";
+.innerText = "Invalid Buggy";
 
 return;
 
@@ -357,7 +488,7 @@ return;
 
 }
 
-if(data.pin !== pin){
+if(String(data.pin) !== String(pin)){
 
 document.getElementById("loginStatus")
 .innerText = "Invalid PIN";
@@ -365,9 +496,6 @@ document.getElementById("loginStatus")
 return;
 
 }
-
-
-/* Check active session */
 
 firebase.database()
 .ref("drivers/"+buggyId)
@@ -392,9 +520,6 @@ return;
 }
 
 }
-
-
-/* Success */
 
 currentBuggy = buggyId;
 
@@ -590,7 +715,6 @@ unclaimedExists=true;
 
 });
 
-
 const sound=document.getElementById("alertSound");
 
 if(unclaimedExists){
@@ -605,11 +729,9 @@ sound.currentTime=0;
 
 }
 
-
 arr.sort((a,b)=>b.count-a.count);
 
 document.getElementById("demandList").innerHTML="";
-
 
 arr.forEach(item=>{
 
@@ -626,7 +748,6 @@ row.className="block claimed";
 row.className="block";
 
 }
-
 
 row.innerHTML=`
 

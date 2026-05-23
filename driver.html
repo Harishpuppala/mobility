@@ -7,12 +7,12 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Prevent cache -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -55,7 +55,6 @@ margin-top:15px;
 border-radius:6px;
 border:1px solid #ccc;
 text-align:center;
-letter-spacing:4px;
 margin:auto;
 display:block;
 }
@@ -79,16 +78,8 @@ background:#145A1A;
 background:#0D47A1;
 }
 
-.boarded:hover{
-background:#08306B;
-}
-
 .claimBtn{
 background:#C62828;
-}
-
-.claimBtn:hover{
-background:#8E0000;
 }
 
 .status{
@@ -113,8 +104,6 @@ padding:10px;
 border-radius:8px;
 border:2px solid #ddd;
 background:#fafafa;
-transition:0.2s;
-animation:pulse 1s ease;
 }
 
 .claimed{
@@ -151,20 +140,6 @@ width:100%;
 text-align:left;
 }
 
-@keyframes pulse{
-
-0%{
-transform:scale(0.97);
-background:#FFF9C4;
-}
-
-100%{
-transform:scale(1);
-background:#fafafa;
-}
-
-}
-
 </style>
 
 </head>
@@ -178,10 +153,16 @@ background:#fafafa;
 <h2>Buggy Driver</h2>
 
 <input
+type="text"
+id="buggyIdInput"
+placeholder="Buggy ID"
+>
+
+<input
 type="password"
 id="pinInput"
-maxlength="4"
-placeholder="Enter PIN">
+placeholder="Driver PIN"
+>
 
 <button onclick="authenticate()">
 Login
@@ -192,6 +173,16 @@ Login
 </div>
 
 <div id="driverPanel" style="display:none;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;">
+
+<h3 id="driverName"></h3>
+
+<button onclick="logoutDriver()">
+Logout
+</button>
+
+</div>
 
 <p id="status" class="status"></p>
 
@@ -204,8 +195,6 @@ Login
 </div>
 
 </div>
-
-<!-- 🚨 FAST BEEP ALERT -->
 
 <audio id="alertSound" loop>
 <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
@@ -230,27 +219,16 @@ firebase.initializeApp(firebaseConfig);
 
 
 /* ===================================================== */
-/* PIN MAP */
+/* DRIVER STATE */
 /* ===================================================== */
 
-const pinBuggyMap={
+let currentBuggy = null;
 
-"1421":"buggy1",
-"2632":"buggy2",
-"3743":"buggy3",
-"4854":"buggy4",
-"5965":"buggy5",
-"6176":"buggy6",
-"7287":"buggy7",
-"8398":"buggy8"
-
-};
-
-let currentBuggy=null;
+const DRIVER_TIMEOUT = 40000;
 
 
 /* ===================================================== */
-/* CAR ICON */
+/* ICON */
 /* ===================================================== */
 
 const buggyIcon=L.icon({
@@ -285,56 +263,41 @@ let buggyMarkers={};
 
 
 /* ===================================================== */
-/* CONFIRM BEFORE EXIT + REMOVE CLAIMS */
+/* SESSION RESTORE */
 /* ===================================================== */
 
-window.addEventListener("beforeunload", function (e) {
+window.onload = function(){
 
-if(currentBuggy){
+const savedBuggy =
+localStorage.getItem("driverBuggy");
 
-e.preventDefault();
+const auth =
+localStorage.getItem("driverAuthenticated");
 
-e.returnValue =
-"Are you sure you want to close the driver dashboard?";
+if(savedBuggy && auth === "true"){
 
-/* Remove driver */
+currentBuggy = savedBuggy;
 
-firebase.database()
-.ref("drivers/"+currentBuggy)
-.remove();
+document.getElementById("loginSection")
+.style.display = "none";
 
-/* Remove claimed trips */
+document.getElementById("driverPanel")
+.style.display = "block";
 
-firebase.database()
-.ref("requests")
-.once("value")
-.then(snapshot=>{
+document.getElementById("driverName")
+.innerText = currentBuggy.toUpperCase();
 
-snapshot.forEach(child=>{
+initializeMap();
 
-const data = child.val();
+startSharing();
 
-if(
-data &&
-data.assignedTo === currentBuggy
-){
+listenDemand();
 
-firebase.database()
-.ref("requests/"+child.key+"/assignedTo")
-.remove();
+listenBuggies();
 
 }
 
-});
-
-});
-
-return
-"Are you sure you want to close the driver dashboard?";
-
-}
-
-});
+};
 
 
 /* ===================================================== */
@@ -343,34 +306,83 @@ return
 
 function authenticate(){
 
-const pin=document.getElementById("pinInput").value;
+const buggyId =
+document.getElementById("buggyIdInput")
+.value
+.trim()
+.toLowerCase();
 
-if(!pinBuggyMap[pin]){
+const pin =
+document.getElementById("pinInput")
+.value
+.trim();
 
-document.getElementById("loginStatus").innerText=
-"Invalid PIN";
+if(!buggyId || !pin){
+
+document.getElementById("loginStatus")
+.innerText = "Enter Buggy ID and PIN";
 
 return;
 
 }
 
-const buggyId=pinBuggyMap[pin];
+
+/* Read secure driverAuth node */
+
+firebase.database()
+.ref("driverAuth/"+buggyId)
+.once("value")
+.then(snapshot=>{
+
+const data = snapshot.val();
+
+if(!data){
+
+document.getElementById("loginStatus")
+.innerText = "Invalid Buggy ID";
+
+return;
+
+}
+
+if(!data.active){
+
+document.getElementById("loginStatus")
+.innerText = "Driver disabled";
+
+return;
+
+}
+
+if(data.pin !== pin){
+
+document.getElementById("loginStatus")
+.innerText = "Invalid PIN";
+
+return;
+
+}
+
+
+/* Check active session */
 
 firebase.database()
 .ref("drivers/"+buggyId)
 .once("value")
-.then(snapshot=>{
+.then(driverSnap=>{
 
-const data=snapshot.val();
+const driverData = driverSnap.val();
 
-if(data && data.time){
+if(driverData && driverData.time){
 
-const age=Date.now()-data.time;
+const age =
+Date.now() - driverData.time;
 
-if(age<40000){
+if(age < DRIVER_TIMEOUT){
 
-document.getElementById("loginStatus").innerText=
-"⚠️ Buggy already active on another device";
+document.getElementById("loginStatus")
+.innerText =
+"⚠️ Driver already active on another device";
 
 return;
 
@@ -378,11 +390,29 @@ return;
 
 }
 
-currentBuggy=buggyId;
 
-document.getElementById("loginSection").style.display="none";
+/* Success */
 
-document.getElementById("driverPanel").style.display="block";
+currentBuggy = buggyId;
+
+localStorage.setItem(
+"driverBuggy",
+buggyId
+);
+
+localStorage.setItem(
+"driverAuthenticated",
+"true"
+);
+
+document.getElementById("loginSection")
+.style.display = "none";
+
+document.getElementById("driverPanel")
+.style.display = "block";
+
+document.getElementById("driverName")
+.innerText = currentBuggy.toUpperCase();
 
 initializeMap();
 
@@ -393,6 +423,30 @@ listenDemand();
 listenBuggies();
 
 });
+
+});
+
+}
+
+
+/* ===================================================== */
+/* LOGOUT */
+/* ===================================================== */
+
+function logoutDriver(){
+
+if(currentBuggy){
+
+firebase.database()
+.ref("drivers/"+currentBuggy)
+.remove();
+
+}
+
+localStorage.removeItem("driverBuggy");
+localStorage.removeItem("driverAuthenticated");
+
+window.location.reload();
 
 }
 
@@ -420,6 +474,8 @@ L.tileLayer(
 function startSharing(){
 
 navigator.geolocation.watchPosition(pos=>{
+
+if(!currentBuggy) return;
 
 firebase.database()
 .ref("drivers/"+currentBuggy)
@@ -460,10 +516,6 @@ if(!d) return;
 const age=Date.now()-d.time;
 
 if(age>30000){
-
-firebase.database()
-.ref("drivers/"+child.key)
-.remove();
 
 return;
 
@@ -620,6 +672,8 @@ document.getElementById("demandList")
 /* ===================================================== */
 
 function claim(block){
+
+if(!currentBuggy) return;
 
 firebase.database()
 .ref("requests/"+block)

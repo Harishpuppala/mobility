@@ -27,6 +27,7 @@ firebase.initializeApp(firebaseConfig);
 /* ===================================================== */
 
 let currentFacultyId = null;
+
 let isAuthenticated = false;
 
 
@@ -58,7 +59,7 @@ db.ref("facultyAuth");
 
 
 /* ===================================================== */
-/* FORCE FRESH DATA */
+/* REMOVE SERVICE WORKERS */
 /* ===================================================== */
 
 if ('serviceWorker' in navigator) {
@@ -79,7 +80,7 @@ registration.unregister();
 
 
 /* ===================================================== */
-/* RESTORE SESSION */
+/* SESSION RESTORE */
 /* ===================================================== */
 
 function initializeFacultySession(){
@@ -94,6 +95,7 @@ localStorage.getItem("facultyAuthenticated");
 if(!savedFaculty || savedAuth !== "true"){
 
 currentFacultyId = null;
+
 isAuthenticated = false;
 
 return;
@@ -101,7 +103,7 @@ return;
 }
 
 
-/* Validate against Firebase */
+/* Validate with Firebase */
 
 facultyAuthRef
 .child(savedFaculty)
@@ -114,6 +116,7 @@ const data = snapshot.val();
 if(!data){
 
 localStorage.clear();
+
 return;
 
 }
@@ -123,7 +126,7 @@ const age =
 Date.now() - (data.lastLogin || 0);
 
 
-/* Auto reset stale sessions */
+/* Reset stale sessions */
 
 if(age > FACULTY_SESSION_TIMEOUT){
 
@@ -142,7 +145,7 @@ return;
 }
 
 
-/* Restore session */
+/* Restore valid session */
 
 if(data.loggedIn){
 
@@ -159,7 +162,7 @@ true;
 .catch(function(error){
 
 console.error(
-"Faculty restore error:",
+"Session restore error:",
 error
 );
 
@@ -195,10 +198,11 @@ return;
 const mapElement =
 document.getElementById("map");
 
+
 if(!mapElement){
 
 console.error(
-"Map container missing"
+"Map container not found"
 );
 
 return;
@@ -208,32 +212,38 @@ return;
 
 /* Create map */
 
-map = L.map('map',{
+map = L.map("map",{
 
 preferCanvas:true,
 zoomControl:true
 
 }).setView(
+
 [16.463261979207143,
 80.50698185003442],
+
 16
+
 );
 
 
 /* OpenStreetMap */
 
 L.tileLayer(
+
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+
 {
 
 maxZoom:19,
 attribution:'© OpenStreetMap'
 
 }
+
 ).addTo(map);
 
 
-/* Resize fix */
+/* Important fix */
 
 setTimeout(function(){
 
@@ -247,7 +257,7 @@ updateMap();
 
 
 /* ===================================================== */
-/* ICONS */
+/* BUGGY ICONS */
 /* ===================================================== */
 
 const greenIcon = L.icon({
@@ -256,6 +266,7 @@ iconUrl:
 "https://cdn-icons-png.flaticon.com/512/744/744465.png",
 
 iconSize:[38,38],
+
 iconAnchor:[19,19]
 
 });
@@ -267,28 +278,22 @@ iconUrl:
 "https://cdn-icons-png.flaticon.com/512/744/744467.png",
 
 iconSize:[38,38],
+
 iconAnchor:[19,19]
 
 });
 
 
 /* ===================================================== */
-/* UPDATE LIVE MAP */
+/* UPDATE MAP */
 /* ===================================================== */
 
 function updateMap(){
 
-if(!map){
-
-return;
-
-}
-
-
 const now = new Date();
 
 
-/* Last updated */
+/* Update time */
 
 const lastUpdateElement =
 document.getElementById("lastUpdate");
@@ -296,7 +301,9 @@ document.getElementById("lastUpdate");
 if(lastUpdateElement){
 
 lastUpdateElement.innerText =
+
 "Last updated: " +
+
 now.toLocaleTimeString("en-IN",{
 
 timeZone:"Asia/Kolkata",
@@ -310,10 +317,12 @@ hour12:true
 }
 
 
+/* Active count */
+
 let activeCount = 0;
 
 
-/* Read drivers */
+/* Get drivers */
 
 driversRef
 .once("value")
@@ -321,33 +330,33 @@ driversRef
 .then(function(snapshot){
 
 
-/* Remove stale markers */
+/* Remove old markers */
 
 Object.keys(markers).forEach(function(id){
 
-const exists =
-snapshot.hasChild(id);
+if(!snapshot.hasChild(id)){
 
-if(!exists){
-
-if(markers[id]){
+if(markers[id] && map){
 
 map.removeLayer(markers[id]);
 
-delete markers[id];
-
 }
+
+delete markers[id];
 
 }
 
 });
 
 
+/* Process drivers */
+
 snapshot.forEach(function(child){
 
 const id = child.key;
 
 const data = child.val();
+
 
 if(!data){
 
@@ -357,8 +366,11 @@ return;
 
 
 const lat = data.lat;
+
 const lng = data.lng;
+
 const lastTime = data.time;
+
 
 if(!lat || !lng || !lastTime){
 
@@ -371,7 +383,7 @@ const age =
 Date.now() - lastTime;
 
 
-/* Remove offline */
+/* Remove offline drivers */
 
 if(age > OFFLINE_LIMIT){
 
@@ -379,7 +391,7 @@ driversRef
 .child(id)
 .remove();
 
-if(markers[id]){
+if(markers[id] && map){
 
 map.removeLayer(markers[id]);
 
@@ -392,7 +404,7 @@ return;
 }
 
 
-/* Active */
+/* Active buggy */
 
 activeCount++;
 
@@ -408,7 +420,9 @@ icon = redIcon;
 }
 
 
-/* Update marker */
+/* Add marker */
+
+if(map){
 
 if(markers[id]){
 
@@ -421,23 +435,31 @@ markers[id]
 }
 else{
 
-markers[id] = L.marker(
+markers[id] =
+
+L.marker(
 [lat,lng],
 {icon:icon}
 )
+
 .addTo(map)
+
 .bindPopup(
+
 "<b>" +
 id.toUpperCase() +
 "</b>"
+
 );
+
+}
 
 }
 
 });
 
 
-/* Active count */
+/* Update active buggy count */
 
 const activeElement =
 document.getElementById("activeBuggies");
@@ -445,6 +467,7 @@ document.getElementById("activeBuggies");
 if(activeElement){
 
 activeElement.innerText =
+
 "Active Buggies: " +
 activeCount;
 
@@ -479,6 +502,7 @@ snapshot.forEach(function(child){
 
 const d = child.val();
 
+
 if(!d){
 
 requestsRef
@@ -500,7 +524,7 @@ const reqTime =
 d.time || 0;
 
 
-/* Remove invalid */
+/* Remove empty */
 
 if(count <= 0){
 
@@ -546,7 +570,7 @@ return;
 }
 
 
-/* Validate assignment */
+/* Validate assigned buggy */
 
 if(assignedTo){
 
@@ -574,6 +598,7 @@ return;
 const age =
 Date.now() -
 (driver.time || 0);
+
 
 if(age > OFFLINE_LIMIT){
 
@@ -605,6 +630,7 @@ requestsRef.on("value",function(snapshot){
 
 let claimedMessage = "";
 
+
 snapshot.forEach(function(child){
 
 const data = child.val();
@@ -621,9 +647,13 @@ if(data.assignedTo){
 claimedMessage +=
 
 "🚗 " +
+
 child.key.replaceAll("_"," ") +
+
 " claimed by " +
+
 data.assignedTo.toUpperCase() +
+
 "<br>";
 
 }
@@ -634,13 +664,15 @@ data.assignedTo.toUpperCase() +
 const statusBox =
 document.getElementById("requestStatus");
 
-if(
-statusBox &&
-claimedMessage !== ""
-){
+
+if(statusBox){
+
+if(claimedMessage !== ""){
 
 statusBox.innerHTML =
 claimedMessage;
+
+}
 
 }
 
@@ -657,6 +689,7 @@ if(!isAuthenticated){
 
 document.getElementById("requestStatus")
 .innerText =
+
 "Faculty authentication required.";
 
 return false;
@@ -668,6 +701,7 @@ if(!currentFacultyId){
 
 document.getElementById("requestStatus")
 .innerText =
+
 "Invalid faculty session.";
 
 return false;
@@ -696,22 +730,28 @@ return;
 /* Prevent spam */
 
 const lastRequest =
+
 localStorage.getItem(
+
 "lastBuggyRequest_" +
 currentFacultyId
+
 );
 
 
 if(lastRequest){
 
 const diff =
+
 Date.now() -
 parseInt(lastRequest);
+
 
 if(diff < 600000){
 
 document.getElementById("requestStatus")
 .innerText =
+
 "You already requested recently.";
 
 return;
@@ -725,6 +765,7 @@ return;
 
 requestsRef
 .child(block)
+
 .transaction(function(data){
 
 if(data === null){
@@ -746,9 +787,12 @@ facultyId:currentFacultyId
 return {
 
 count:(data.count || 0) + 1,
+
 assignedTo:
 data.assignedTo || null,
+
 time:Date.now(),
+
 facultyId:currentFacultyId
 
 };
@@ -756,7 +800,7 @@ facultyId:currentFacultyId
 });
 
 
-/* Save timestamp */
+/* Save cooldown */
 
 localStorage.setItem(
 
@@ -774,7 +818,9 @@ document.getElementById("requestStatus")
 .innerText =
 
 "Request sent from " +
+
 block.replaceAll("_"," ") +
+
 ". Please wait for the buggy.";
 
 }
@@ -786,17 +832,13 @@ block.replaceAll("_"," ") +
 
 setInterval(function(){
 
-if(map){
-
 updateMap();
-
-}
 
 },5000);
 
 
 /* ===================================================== */
-/* AUTO SESSION HEARTBEAT */
+/* HEARTBEAT */
 /* ===================================================== */
 
 setInterval(function(){
@@ -820,11 +862,10 @@ lastLogin:Date.now()
 
 
 /* ===================================================== */
-/* FORCE HARD REFRESH */
+/* FORCE REFRESH */
 /* ===================================================== */
 
-window.onpageshow =
-function(event){
+window.onpageshow = function(event){
 
 if(event.persisted){
 

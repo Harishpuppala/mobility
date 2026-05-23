@@ -10,6 +10,11 @@ appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
 
 };
 
+
+/* ===================================================== */
+/* FIREBASE INIT */
+/* ===================================================== */
+
 if (!firebase.apps.length) {
 
 firebase.initializeApp(firebaseConfig);
@@ -18,7 +23,7 @@ firebase.initializeApp(firebaseConfig);
 
 
 /* ===================================================== */
-/* AUTHENTICATION STATE */
+/* GLOBAL AUTH STATE */
 /* ===================================================== */
 
 let currentFacultyId = null;
@@ -26,54 +31,30 @@ let isAuthenticated = false;
 
 
 /* ===================================================== */
-/* APPROVED FACULTY */
+/* SESSION SETTINGS */
 /* ===================================================== */
 
-const APPROVED_FACULTY = [
+const FACULTY_SESSION_TIMEOUT = 3600000;
 
-"22295",
-"22296",
-"22297",
-"22298",
-"22299",
-"23104",
-"23019"
+const WARNING_LIMIT = 30000;
 
-];
+const OFFLINE_LIMIT = 40000;
 
 
 /* ===================================================== */
-/* CHECK AUTH STATE */
+/* DATABASE REFERENCES */
 /* ===================================================== */
 
-function initializeFacultySession(){
+const db = firebase.database();
 
-const savedFaculty =
-localStorage.getItem("facultyId");
+const driversRef =
+db.ref("drivers");
 
-const savedAuth =
-localStorage.getItem("facultyAuthenticated");
+const requestsRef =
+db.ref("requests");
 
-if(
-savedFaculty &&
-savedAuth === "true" &&
-APPROVED_FACULTY.includes(savedFaculty)
-){
-
-currentFacultyId = savedFaculty;
-isAuthenticated = true;
-
-}
-else{
-
-currentFacultyId = null;
-isAuthenticated = false;
-
-}
-
-}
-
-initializeFacultySession();
+const facultyAuthRef =
+db.ref("facultyAuth");
 
 
 /* ===================================================== */
@@ -98,10 +79,109 @@ registration.unregister();
 
 
 /* ===================================================== */
+/* RESTORE SESSION */
+/* ===================================================== */
+
+function initializeFacultySession(){
+
+const savedFaculty =
+localStorage.getItem("facultyId");
+
+const savedAuth =
+localStorage.getItem("facultyAuthenticated");
+
+
+if(!savedFaculty || savedAuth !== "true"){
+
+currentFacultyId = null;
+isAuthenticated = false;
+
+return;
+
+}
+
+
+/* Validate against Firebase */
+
+facultyAuthRef
+.child(savedFaculty)
+.once("value")
+
+.then(function(snapshot){
+
+const data = snapshot.val();
+
+if(!data){
+
+localStorage.clear();
+return;
+
+}
+
+
+const age =
+Date.now() - (data.lastLogin || 0);
+
+
+/* Auto reset stale sessions */
+
+if(age > FACULTY_SESSION_TIMEOUT){
+
+facultyAuthRef
+.child(savedFaculty)
+.update({
+
+loggedIn:false
+
+});
+
+localStorage.clear();
+
+return;
+
+}
+
+
+/* Restore session */
+
+if(data.loggedIn){
+
+currentFacultyId =
+savedFaculty;
+
+isAuthenticated =
+true;
+
+}
+
+})
+
+.catch(function(error){
+
+console.error(
+"Faculty restore error:",
+error
+);
+
+});
+
+}
+
+initializeFacultySession();
+
+
+/* ===================================================== */
 /* MAP */
 /* ===================================================== */
 
 var map = null;
+
+const markers = {};
+
+
+/* ===================================================== */
+/* INITIALIZE MAP */
+/* ===================================================== */
 
 function initializeMap(){
 
@@ -112,14 +192,14 @@ return;
 }
 
 
-/* Wait until DOM fully visible */
-
 const mapElement =
 document.getElementById("map");
 
 if(!mapElement){
 
-console.error("Map container missing");
+console.error(
+"Map container missing"
+);
 
 return;
 
@@ -134,12 +214,13 @@ preferCanvas:true,
 zoomControl:true
 
 }).setView(
-[16.463261979207143, 80.50698185003442],
+[16.463261979207143,
+80.50698185003442],
 16
 );
 
 
-/* OSM Layer */
+/* OpenStreetMap */
 
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -152,7 +233,7 @@ attribution:'© OpenStreetMap'
 ).addTo(map);
 
 
-/* IMPORTANT */
+/* Resize fix */
 
 setTimeout(function(){
 
@@ -168,9 +249,6 @@ updateMap();
 /* ===================================================== */
 /* ICONS */
 /* ===================================================== */
-
-const markers = {};
-
 
 const greenIcon = L.icon({
 
@@ -195,26 +273,7 @@ iconAnchor:[19,19]
 
 
 /* ===================================================== */
-/* TIMING */
-/* ===================================================== */
-
-const WARNING_LIMIT = 30000;
-const OFFLINE_LIMIT = 40000;
-
-
-/* ===================================================== */
-/* DATABASE REFERENCES */
-/* ===================================================== */
-
-const driversRef =
-firebase.database().ref("drivers");
-
-const requestsRef =
-firebase.database().ref("requests");
-
-
-/* ===================================================== */
-/* UPDATE MAP */
+/* UPDATE LIVE MAP */
 /* ===================================================== */
 
 function updateMap(){
@@ -229,7 +288,7 @@ return;
 const now = new Date();
 
 
-/* Last update */
+/* Last updated */
 
 const lastUpdateElement =
 document.getElementById("lastUpdate");
@@ -256,7 +315,8 @@ let activeCount = 0;
 
 /* Read drivers */
 
-driversRef.once("value")
+driversRef
+.once("value")
 
 .then(function(snapshot){
 
@@ -265,7 +325,8 @@ driversRef.once("value")
 
 Object.keys(markers).forEach(function(id){
 
-const exists = snapshot.hasChild(id);
+const exists =
+snapshot.hasChild(id);
 
 if(!exists){
 
@@ -285,6 +346,7 @@ delete markers[id];
 snapshot.forEach(function(child){
 
 const id = child.key;
+
 const data = child.val();
 
 if(!data){
@@ -292,6 +354,7 @@ if(!data){
 return;
 
 }
+
 
 const lat = data.lat;
 const lng = data.lng;
@@ -303,16 +366,17 @@ return;
 
 }
 
+
 const age =
 Date.now() - lastTime;
 
 
-/* Remove offline drivers */
+/* Remove offline */
 
 if(age > OFFLINE_LIMIT){
 
-firebase.database()
-.ref("drivers/"+id)
+driversRef
+.child(id)
 .remove();
 
 if(markers[id]){
@@ -328,14 +392,14 @@ return;
 }
 
 
-/* Active count */
+/* Active */
 
 activeCount++;
 
 let icon = greenIcon;
 
 
-/* Warning icon */
+/* Warning */
 
 if(age > WARNING_LIMIT){
 
@@ -344,13 +408,15 @@ icon = redIcon;
 }
 
 
-/* Marker update */
+/* Update marker */
 
 if(markers[id]){
 
-markers[id].setLatLng([lat,lng]);
+markers[id]
+.setLatLng([lat,lng]);
 
-markers[id].setIcon(icon);
+markers[id]
+.setIcon(icon);
 
 }
 else{
@@ -360,14 +426,18 @@ markers[id] = L.marker(
 {icon:icon}
 )
 .addTo(map)
-.bindPopup("<b>"+id.toUpperCase()+"</b>");
+.bindPopup(
+"<b>" +
+id.toUpperCase() +
+"</b>"
+);
 
 }
 
 });
 
 
-/* Update count */
+/* Active count */
 
 const activeElement =
 document.getElementById("activeBuggies");
@@ -375,7 +445,8 @@ document.getElementById("activeBuggies");
 if(activeElement){
 
 activeElement.innerText =
-"Active Buggies: " + activeCount;
+"Active Buggies: " +
+activeCount;
 
 }
 
@@ -394,13 +465,14 @@ error
 
 
 /* ===================================================== */
-/* AUTO CLEAN REQUESTS */
+/* CLEAN REQUESTS */
 /* ===================================================== */
 
 function cleanRequests(){
 
 requestsRef
 .once("value")
+
 .then(function(snapshot){
 
 snapshot.forEach(function(child){
@@ -416,6 +488,7 @@ requestsRef
 return;
 
 }
+
 
 const count =
 d.count || 0;
@@ -460,7 +533,7 @@ return;
 }
 
 
-/* Remove legacy requests */
+/* Remove legacy */
 
 if(!reqTime){
 
@@ -480,6 +553,7 @@ if(assignedTo){
 driversRef
 .child(assignedTo)
 .once("value")
+
 .then(function(driverSnap){
 
 const driver =
@@ -496,8 +570,10 @@ return;
 
 }
 
+
 const age =
-Date.now() - (driver.time || 0);
+Date.now() -
+(driver.time || 0);
 
 if(age > OFFLINE_LIMIT){
 
@@ -539,9 +615,11 @@ return;
 
 }
 
+
 if(data.assignedTo){
 
 claimedMessage +=
+
 "🚗 " +
 child.key.replaceAll("_"," ") +
 " claimed by " +
@@ -556,7 +634,10 @@ data.assignedTo.toUpperCase() +
 const statusBox =
 document.getElementById("requestStatus");
 
-if(statusBox && claimedMessage !== ""){
+if(
+statusBox &&
+claimedMessage !== ""
+){
 
 statusBox.innerHTML =
 claimedMessage;
@@ -582,6 +663,7 @@ return false;
 
 }
 
+
 if(!currentFacultyId){
 
 document.getElementById("requestStatus")
@@ -592,17 +674,6 @@ return false;
 
 }
 
-if(
-!APPROVED_FACULTY.includes(currentFacultyId)
-){
-
-document.getElementById("requestStatus")
-.innerText =
-"Faculty not authorized.";
-
-return false;
-
-}
 
 return true;
 
@@ -622,18 +693,20 @@ return;
 }
 
 
+/* Prevent spam */
+
 const lastRequest =
 localStorage.getItem(
-"lastBuggyRequest_" + currentFacultyId
+"lastBuggyRequest_" +
+currentFacultyId
 );
 
-
-/* Prevent spam */
 
 if(lastRequest){
 
 const diff =
-Date.now() - parseInt(lastRequest);
+Date.now() -
+parseInt(lastRequest);
 
 if(diff < 600000){
 
@@ -667,10 +740,14 @@ facultyId:currentFacultyId
 
 }
 
+
+/* Increment */
+
 return {
 
 count:(data.count || 0) + 1,
-assignedTo:data.assignedTo || null,
+assignedTo:
+data.assignedTo || null,
 time:Date.now(),
 facultyId:currentFacultyId
 
@@ -682,8 +759,12 @@ facultyId:currentFacultyId
 /* Save timestamp */
 
 localStorage.setItem(
-"lastBuggyRequest_" + currentFacultyId,
+
+"lastBuggyRequest_" +
+currentFacultyId,
+
 Date.now()
+
 );
 
 
@@ -691,6 +772,7 @@ Date.now()
 
 document.getElementById("requestStatus")
 .innerText =
+
 "Request sent from " +
 block.replaceAll("_"," ") +
 ". Please wait for the buggy.";
@@ -714,10 +796,35 @@ updateMap();
 
 
 /* ===================================================== */
+/* AUTO SESSION HEARTBEAT */
+/* ===================================================== */
+
+setInterval(function(){
+
+if(
+isAuthenticated &&
+currentFacultyId
+){
+
+facultyAuthRef
+.child(currentFacultyId)
+.update({
+
+lastLogin:Date.now()
+
+});
+
+}
+
+},60000);
+
+
+/* ===================================================== */
 /* FORCE HARD REFRESH */
 /* ===================================================== */
 
-window.onpageshow = function(event){
+window.onpageshow =
+function(event){
 
 if(event.persisted){
 

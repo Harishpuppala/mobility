@@ -18,7 +18,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Main CSS -->
 <link rel="stylesheet"
-href="style.css?v=11"/>
+href="style.css?v=12"/>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -363,7 +363,7 @@ Inactive
 <!-- APP SCRIPT -->
 <!-- ================================================== -->
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 
 <script>
 
@@ -397,11 +397,13 @@ return;
 }
 
 
+/* Session timeout */
+
 const age =
 Date.now() - (data.lastLogin || 0);
 
 
-/* Auto reset stale session */
+/* Reset stale login */
 
 if(age > 3600000){
 
@@ -420,7 +422,7 @@ return;
 }
 
 
-/* Restore session */
+/* Restore valid session */
 
 if(data.loggedIn){
 
@@ -433,6 +435,15 @@ true;
 showDashboard(savedFaculty);
 
 }
+
+})
+
+.catch(function(error){
+
+console.error(
+"Session restore error:",
+error
+);
 
 });
 
@@ -490,7 +501,9 @@ return;
 }
 
 
-if(!data.active){
+/* Active check */
+
+if(data.active !== true){
 
 document.getElementById("loginStatus")
 .innerText =
@@ -501,7 +514,9 @@ return;
 }
 
 
-if(data.pin !== pin){
+/* PIN validation */
+
+if(String(data.pin) !== String(pin)){
 
 document.getElementById("loginStatus")
 .innerText =
@@ -512,13 +527,13 @@ return;
 }
 
 
-/* Session age */
+/* Session timeout */
 
 const age =
 Date.now() - (data.lastLogin || 0);
 
 
-/* Reset stale session */
+/* Reset stale login */
 
 if(age > 3600000){
 
@@ -533,7 +548,7 @@ loggedIn:false
 }
 
 
-/* Multiple login prevention */
+/* Prevent multiple login */
 
 if(data.loggedIn && age < 3600000){
 
@@ -558,7 +573,7 @@ lastLogin:Date.now()
 });
 
 
-/* Save local session */
+/* Save session */
 
 localStorage.setItem(
 "facultyId",
@@ -571,7 +586,7 @@ localStorage.setItem(
 );
 
 
-/* Global auth state */
+/* Update globals */
 
 currentFacultyId =
 facultyId;
@@ -588,7 +603,10 @@ showDashboard(facultyId);
 
 .catch(function(error){
 
-console.error(error);
+console.error(
+"Firebase login error:",
+error
+);
 
 document.getElementById("loginStatus")
 .innerText =
@@ -659,6 +677,8 @@ loggedIn:false
 }
 
 
+/* Clear session */
+
 localStorage.removeItem("facultyId");
 
 localStorage.removeItem(
@@ -668,6 +688,9 @@ localStorage.removeItem(
 currentFacultyId = null;
 
 isAuthenticated = false;
+
+
+/* Reload */
 
 window.location.reload();
 
@@ -691,6 +714,8 @@ return;
 }
 
 
+/* Cooldown */
+
 const lastRequest =
 localStorage.getItem(
 "lastBuggyRequestBlock"
@@ -701,8 +726,6 @@ localStorage.getItem(
 "lastBuggyRequestTime"
 );
 
-
-/* Prevent spam */
 
 if(lastTime){
 
@@ -723,12 +746,12 @@ return;
 }
 
 
-/* Request */
+/* Send request */
 
 requestBuggy(block);
 
 
-/* Save */
+/* Save cooldown */
 
 localStorage.setItem(
 "lastBuggyRequestBlock",

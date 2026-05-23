@@ -12,6 +12,65 @@ firebase.initializeApp(firebaseConfig);
 
 
 /* ===================================================== */
+/* AUTHENTICATION STATE */
+/* ===================================================== */
+
+let currentFacultyId = null;
+let isAuthenticated = false;
+
+/* Approved faculty IDs */
+
+const APPROVED_FACULTY = [
+"22295",
+"22296",
+"22297",
+"22298",
+"22299",
+"23104",
+"23019"
+];
+
+
+/* ===================================================== */
+/* CHECK AUTH STATE */
+/* ===================================================== */
+
+function initializeFacultySession(){
+
+const savedFaculty =
+localStorage.getItem("facultyId");
+
+const savedAuth =
+localStorage.getItem("facultyAuthenticated");
+
+if(
+savedFaculty &&
+savedAuth === "true" &&
+APPROVED_FACULTY.includes(savedFaculty)
+){
+
+currentFacultyId = savedFaculty;
+isAuthenticated = true;
+
+console.log(
+"Faculty authenticated:",
+currentFacultyId
+);
+
+}
+else{
+
+isAuthenticated = false;
+currentFacultyId = null;
+
+}
+
+}
+
+initializeFacultySession();
+
+
+/* ===================================================== */
 /* FORCE FRESH DATA */
 /* ===================================================== */
 
@@ -335,8 +394,6 @@ firebase.database()
 
 });
 
-}
-
 
 /* Refresh every 5 sec */
 
@@ -396,13 +453,62 @@ statusBox.innerHTML = claimedMessage;
 
 
 /* ===================================================== */
+/* FACULTY AUTH CHECK */
+/* ===================================================== */
+
+function verifyFacultyAccess(){
+
+if(!isAuthenticated){
+
+document.getElementById("requestStatus").innerText =
+"Faculty authentication required.";
+
+return false;
+
+}
+
+if(!currentFacultyId){
+
+document.getElementById("requestStatus").innerText =
+"Invalid faculty session.";
+
+return false;
+
+}
+
+if(!APPROVED_FACULTY.includes(currentFacultyId)){
+
+document.getElementById("requestStatus").innerText =
+"Faculty not authorized.";
+
+return false;
+
+}
+
+return true;
+
+}
+
+
+/* ===================================================== */
 /* PASSENGER REQUEST BUTTON */
 /* ===================================================== */
 
 function requestBuggy(block){
 
+/* Faculty validation */
+
+if(!verifyFacultyAccess()){
+
+return;
+
+}
+
+
 const lastRequest =
-localStorage.getItem("lastBuggyRequest");
+localStorage.getItem(
+"lastBuggyRequest_" + currentFacultyId
+);
 
 
 /* Prevent spam */
@@ -440,7 +546,8 @@ return {
 
 count:1,
 assignedTo:null,
-time:Date.now()
+time:Date.now(),
+facultyId:currentFacultyId
 
 };
 
@@ -453,7 +560,8 @@ return {
 
 count:(data.count || 0) + 1,
 assignedTo:data.assignedTo || null,
-time:Date.now()
+time:Date.now(),
+facultyId:currentFacultyId
 
 };
 
@@ -463,7 +571,7 @@ time:Date.now()
 /* Save local time */
 
 localStorage.setItem(
-"lastBuggyRequest",
+"lastBuggyRequest_" + currentFacultyId,
 Date.now()
 );
 

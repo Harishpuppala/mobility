@@ -1,4 +1,5 @@
 const firebaseConfig = {
+
 apiKey: "AIzaSyAvjtrYcKPdME8cClw2uUrspUldYXFw6B-g",
 authDomain: "mobility-ca790.firebaseapp.com",
 databaseURL: "https://mobility-ca790-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -6,6 +7,7 @@ projectId: "mobility-ca790",
 storageBucket: "mobility-ca790.firebasestorage.app",
 messagingSenderId: "832491995447",
 appId: "1:832491995447:web:9f5de3b844e3119f79ab2"
+
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -95,7 +97,17 @@ registration.unregister();
 /* MAP INITIALIZATION */
 /* ===================================================== */
 
-var map = L.map('map').setView(
+var map = null;
+
+function initializeMap(){
+
+if(map !== null){
+
+return;
+
+}
+
+map = L.map('map').setView(
 [16.463261979207143, 80.50698185003442],
 16
 );
@@ -106,6 +118,8 @@ L.tileLayer(
 maxZoom:19
 }
 ).addTo(map);
+
+}
 
 
 /* ===================================================== */
@@ -153,6 +167,12 @@ firebase.database().ref("drivers");
 /* ===================================================== */
 
 function updateMap(){
+
+if(!map){
+
+return;
+
+}
 
 const now = new Date();
 

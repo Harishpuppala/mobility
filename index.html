@@ -18,7 +18,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Main CSS -->
 <link rel="stylesheet"
-href="style.css?v=12"/>
+href="style.css?v=13"/>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -363,7 +363,7 @@ Inactive
 <!-- APP SCRIPT -->
 <!-- ================================================== -->
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 
 <script>
 
@@ -548,20 +548,42 @@ loggedIn:false
 }
 
 
-/* Prevent multiple login */
+/* ===================================================== */
+/* FORCE LOGIN OPTION */
+/* ===================================================== */
 
 if(data.loggedIn && age < 3600000){
 
-document.getElementById("loginStatus")
-.innerText =
-"Already logged in on another device";
+const forceLogin = confirm(
+
+"Already logged in on another device.\n\nDo you want to force logout previous session?"
+
+);
+
+if(!forceLogin){
 
 return;
 
 }
 
 
-/* Login success */
+/* Force overwrite */
+
+firebase.database()
+.ref("facultyAuth/" + facultyId)
+.update({
+
+loggedIn:true,
+lastLogin:Date.now()
+
+});
+
+}
+
+
+/* ===================================================== */
+/* LOGIN SUCCESS */
+/* ===================================================== */
 
 firebase.database()
 .ref("facultyAuth/" + facultyId)

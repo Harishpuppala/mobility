@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Custom Styles -->
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 
 <!-- Map Library -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -83,6 +83,51 @@ background:#CFCFCF;
 
 }
 
+
+/* ===================================================== */
+/* USER DASHBOARD FIX */
+/* ===================================================== */
+
+.userContainer{
+
+padding:20px;
+box-sizing:border-box;
+width:100%;
+
+}
+
+.requestBox{
+
+position:relative;
+z-index:10;
+
+}
+
+
+/* ===================================================== */
+/* MAP FIX */
+/* ===================================================== */
+
+.miniMapBox{
+
+width:100%;
+height:380px;
+margin-bottom:20px;
+border-radius:12px;
+overflow:hidden;
+background:#EEE;
+
+}
+
+#map{
+
+width:100%;
+height:100%;
+min-height:380px;
+z-index:1;
+
+}
+
 </style>
 
 </head>
@@ -145,13 +190,15 @@ Login
 <div
 class="userContainer"
 id="mainDashboard"
-style="display:none;width:100%;"
+style="display:none;"
 >
 
 <!-- MINI MAP -->
 
 <div class="miniMapBox">
+
 <div id="map"></div>
+
 </div>
 
 
@@ -230,7 +277,7 @@ Inactive
 
 <!-- ================= APPLICATION SCRIPT ================= -->
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 
 <script>
 
@@ -354,7 +401,7 @@ updateMap();
 
 }
 
-},500);
+},700);
 
 }
 

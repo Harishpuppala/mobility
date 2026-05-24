@@ -18,7 +18,7 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <!-- Main CSS -->
 <link rel="stylesheet"
-href="style.css?v=14"/>
+href="style.css?v=15"/>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -28,7 +28,6 @@ href="style.css?v=14"/>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-
 
 body{
 
@@ -74,7 +73,6 @@ width:100%;
 
 }
 
-
 .userContainer{
 
 width:100%;
@@ -84,9 +82,6 @@ padding:20px;
 box-sizing:border-box;
 
 }
-
-
-
 
 .miniMapBox{
 
@@ -109,9 +104,6 @@ z-index:1;
 
 }
 
-
-
-
 .requestBox{
 
 position:relative;
@@ -127,9 +119,6 @@ margin-bottom:15px;
 color:#1B5E20;
 
 }
-
-
-
 
 .logoutBtn{
 
@@ -147,9 +136,6 @@ background:#CCCCCC;
 
 }
 
-
-
-
 #loginStatus{
 
 font-size:14px;
@@ -159,13 +145,26 @@ color:#C62828;
 
 }
 
+.cgtFooter{
+
+margin-top:20px;
+font-size:13px;
+font-weight:bold;
+color:#666;
+text-align:center;
+line-height:1.6;
+
+}
+
 </style>
 
 </head>
 
 <body>
 
-
+<!-- ================================================== -->
+<!-- HEADER -->
+<!-- ================================================== -->
 
 <div class="header">
 
@@ -181,21 +180,20 @@ Active Buggies: 0
 Last updated: --
 </div>
 
-<div class="title-right">
-Centre for Geospatial Technology
 </div>
 
-</div>
-
-
-
+<!-- ================================================== -->
+<!-- LOGIN -->
+<!-- ================================================== -->
 
 <div
 id="loginContainer"
 class="requestBox"
 >
 
-<h3>Faculty Authentication</h3>
+<h3 style="text-align:center;">
+Faculty Authentication
+</h3>
 
 <input
 type="text"
@@ -220,10 +218,16 @@ Login
 
 <p id="loginStatus"></p>
 
+<p class="cgtFooter">
+Developed by<br>
+Centre for Geospatial Technology
+</p>
+
 </div>
 
-
-
+<!-- ================================================== -->
+<!-- DASHBOARD -->
+<!-- ================================================== -->
 
 <div
 class="userContainer"
@@ -239,7 +243,6 @@ style="display:none;"
 
 </div>
 
-
 <!-- REQUEST SECTION -->
 
 <div class="requestBox">
@@ -252,7 +255,9 @@ align-items:center;
 "
 >
 
-<h3>Select your Pickup Location</h3>
+<h3>
+Where are you waiting for the buggy?
+</h3>
 
 <button
 onclick="logoutFaculty()"
@@ -264,7 +269,6 @@ Logout
 </div>
 
 <p id="facultyDisplay"></p>
-
 
 <div class="requestGrid">
 
@@ -311,8 +315,9 @@ Gate 6
 
 </div>
 
-
-
+<!-- ================================================== -->
+<!-- LEGEND -->
+<!-- ================================================== -->
 
 <div class="legend">
 
@@ -330,14 +335,17 @@ Inactive
 
 </div>
 
+<!-- ================================================== -->
+<!-- APP SCRIPT -->
+<!-- ================================================== -->
 
-
-
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 
 <script>
 
-
+/* ===================================================== */
+/* SHA256 */
+/* ===================================================== */
 
 async function sha256(message){
 
@@ -366,8 +374,9 @@ return hashHex;
 
 }
 
-
-
+/* ===================================================== */
+/* RESTORE SESSION */
+/* ===================================================== */
 
 window.onload = function(){
 
@@ -440,8 +449,9 @@ error
 
 };
 
-
-
+/* ===================================================== */
+/* LOGIN */
+/* ===================================================== */
 
 async function loginFaculty(){
 
@@ -496,9 +506,6 @@ return;
 
 }
 
-
-
-
 if(data.pinHash !== hashedPin){
 
 document.getElementById("loginStatus")
@@ -524,9 +531,6 @@ loggedIn:false
 
 }
 
-
-
-
 if(data.loggedIn && age < 3600000){
 
 const forceLogin = confirm(
@@ -551,9 +555,6 @@ lastLogin:Date.now()
 });
 
 }
-
-
-
 
 firebase.database()
 .ref("facultyAuth/" + facultyId)
@@ -599,8 +600,9 @@ document.getElementById("loginStatus")
 
 }
 
-
-
+/* ===================================================== */
+/* SHOW DASHBOARD */
+/* ===================================================== */
 
 function showDashboard(facultyId){
 
@@ -635,7 +637,9 @@ updateMap();
 
 }
 
-
+/* ===================================================== */
+/* LOGOUT */
+/* ===================================================== */
 
 function logoutFaculty(){
 
@@ -665,7 +669,9 @@ window.location.reload();
 
 }
 
-
+/* ===================================================== */
+/* SEND REQUEST */
+/* ===================================================== */
 
 function sendRequest(block){
 
@@ -752,7 +758,9 @@ block.replaceAll("_"," ") +
 
 }
 
-
+/* ===================================================== */
+/* FORCE REFRESH */
+/* ===================================================== */
 
 window.onpageshow =
 function(event){
